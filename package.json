@@ -1,0 +1,31 @@
+{
+  "name": "vite-plugin-src-update",
+  "version": "1.0.1",
+  "description": "`update-vite-tag` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports configuration for development scripts, CDN usage, and custom template file paths.",
+  "files": [
+    "dist"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "urlToYourRepository"
+  },
+  "keywords": [
+    "vite",
+    "vite-plugin"
+  ],
+  "author": "Julian Bo Bendtsen",
+  "license": "MIT",
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2",
+    "@types/node": "^20.5.7"
+  },
+  "peerDependencies": {
+    "vite": "^5.1.6"
+  },
+  "scripts": {
+    "build": "tsc"
+  }
+}
