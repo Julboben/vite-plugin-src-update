@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.DS_Store
+.bundle
+*.js.map
+*.zip
+
+# Vite tag #
+######################
+vite-tag.html
