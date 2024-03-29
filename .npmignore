@@ -2,3 +2,7 @@ node_modules
 src
 .gitignore
 tsconfig.json
+vite.config.mts
+main.ts
+index.html
+vite-build

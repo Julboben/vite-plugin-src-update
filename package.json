@@ -27,6 +27,10 @@
     "vite": "^5.1.6"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "vite:dev": "vite",
+    "vite:build": "vite build",
+    "version-up": "npm version patch",
+    "publish": "npm publish"
   }
 }
