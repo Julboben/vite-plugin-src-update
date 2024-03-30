@@ -10,11 +10,9 @@ export default defineConfig(({ mode }) => {
     resolve: {},
     plugins: [
       viteSrcUpdate({
-        scriptsInDev: ["@vite/client", "main.js", "test-src-update.js"],
-        devServerAddress: "http://localhost:5173",
         templateFilePath: "index.html",
-        entrypointsDir: "vite",
-        cdn: true,
+        entrypointsDir: "vite-build",
+        cdn: false,
       }),
     ],
     build: {
@@ -26,7 +24,7 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, "main.js"),
-          jquery: resolve(__dirname, "jquery.js"),
+          second: resolve(__dirname, "main-second.js"),
         },
         output: { 
           entryFileNames: `[name].bundle.[hash].js`,

@@ -1,5 +1,5 @@
 const message =
-  "This is a test. Please check the DOM elements to see if the vite scripts updated correctly.";
+  "Please check the DOM elements to see if the vite scripts updates correctly.";
 
 console.log(`${message}`);
 const body = document.getElementsByTagName("body")[0];

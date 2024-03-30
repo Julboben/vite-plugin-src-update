@@ -3,6 +3,7 @@ src
 .gitignore
 tsconfig.json
 vite.config.mts
-main.ts
+main.js
+main-second.js
 index.html
 vite-build
