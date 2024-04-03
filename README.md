@@ -8,12 +8,11 @@
 npm install vite-plugin-src-update
 ```
 
-# Usage
+## Usage
 
 Import the plugin in your `vite.config.js`:
 
-
-```
+```ts
 import viteSrcUpdate from 'vite-plugin-src-update':
 
 export default {
@@ -27,13 +26,13 @@ export default {
 }
 ```
 
-# Options
+## Options
 
 * `templateFilePath`: Path to the template file.
 * `entrypointsDir`: Directory where the entrypoints are located.
 * `cdn`: Whether to use a CDN for the script
 
-# MIT License
+## MIT License
 
 Copyright (c) 2024 Julian Bo Bendtsen
 
