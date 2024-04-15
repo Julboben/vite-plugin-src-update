@@ -1,7 +1,7 @@
 {
   "name": "vite-plugin-src-update",
   "type": "module",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "`vite-plugin-src-update` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports configuration for development scripts, CDN usage, and custom template file paths.",
   "files": [
     "dist"
@@ -16,7 +16,7 @@
     "vite",
     "vite-plugin"
   ],
-  "author": "Julian Bo Bendtsen",
+  "author": "Julian Bo Bendtsen (https://julben.dk)",
   "license": "MIT",
   "devDependencies": {
     "ts-node": "^10.9.2",
