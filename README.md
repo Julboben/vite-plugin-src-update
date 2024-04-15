@@ -1,6 +1,6 @@
 # vite-plugin-src-update
 
-`update-vite-tag` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports multiple coding languages, configuration for CDN usage, and custom template file path.
+`vite-plugin-src-update` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports multiple coding languages, configuration for CDN usage, and custom template file path.
 
 ## Installation
 
@@ -13,11 +13,11 @@ npm install vite-plugin-src-update
 Import the plugin in your `vite.config.js`:
 
 ```ts
-import viteSrcUpdate from 'vite-plugin-src-update':
+import vitePluginSrcUpdate from 'vite-plugin-src-update':
 
 export default {
   plugins: [
-    viteSrcUpdate({
+    vitePluginSrcUpdate({
       templateFilePath: 'path/to/template.html',
       entrypointsDir: 'path/to/entrypoints',
       cdn: false

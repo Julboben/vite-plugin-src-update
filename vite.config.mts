@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
-import viteSrcUpdate from "./dist";
+import vitePluginSrcUpdate from "./dist";
 
 export default defineConfig(({ mode }) => {
   return {
@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {},
     plugins: [
-      viteSrcUpdate({
+      vitePluginSrcUpdate({
         templateFilePath: "index.html",
         entrypointsDir: "vite-build",
         cdn: false,

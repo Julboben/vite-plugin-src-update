@@ -2,7 +2,7 @@
   "name": "vite-plugin-src-update",
   "type": "module",
   "version": "1.0.4",
-  "description": "`update-vite-tag` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports configuration for development scripts, CDN usage, and custom template file paths.",
+  "description": "`vite-plugin-src-update` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports configuration for development scripts, CDN usage, and custom template file paths.",
   "files": [
     "dist"
   ],
