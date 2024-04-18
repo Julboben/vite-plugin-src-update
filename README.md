@@ -5,7 +5,7 @@
 ## Installation
 
 ```sh
-npm install vite-plugin-src-update
+npm install vite-plugin-src-update --save-dev
 ```
 
 ## Usage

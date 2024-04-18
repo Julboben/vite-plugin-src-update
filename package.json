@@ -30,7 +30,6 @@
     "build": "tsc",
     "vite:dev": "vite",
     "vite:build": "vite build",
-    "version-up": "npm version patch",
-    "publish": "npm publish"
+    "version-up": "npm version patch"
   }
 }
