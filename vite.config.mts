@@ -18,13 +18,12 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: resolve(__dirname, "vite-build"),
       assetsDir: ".",
-      sourcemap: true,
       manifest: "manifest.json",
       emptyOutDir: true,
       rollupOptions: {
         input: {
-          main: resolve(__dirname, "main.js"),
-          second: resolve(__dirname, "main-second.js"),
+          main: resolve(__dirname, "src/entrypoints/main.js"),
+          second: resolve(__dirname, "src/entrypoints/main-second.js"),
         },
         output: { 
           entryFileNames: `[name].bundle.[hash].js`,
