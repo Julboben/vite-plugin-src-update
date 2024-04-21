@@ -11,7 +11,6 @@ export default defineConfig(({ mode }) => {
     plugins: [
       vitePluginSrcUpdate({
         templateFilePath: "index.html",
-        entrypointsDir: "vite-build",
         cdn: false,
       }),
     ],
@@ -25,7 +24,7 @@ export default defineConfig(({ mode }) => {
           main: resolve(__dirname, "src/entrypoints/main.js"),
           second: resolve(__dirname, "src/entrypoints/main-second.js"),
         },
-        output: { 
+        output: {
           entryFileNames: `[name].bundle.[hash].js`,
           chunkFileNames: `[name].chunk.[hash].js`,
           assetFileNames: `[name].min.[hash].[ext]`,

@@ -19,7 +19,7 @@ export default {
   plugins: [
     vitePluginSrcUpdate({
       templateFilePath: 'path/to/template.html',
-      entrypointsDir: 'path/to/entrypoints',
+      outDir: 'path/to/outDir',
       cdn: false
     })
   ]
@@ -29,7 +29,7 @@ export default {
 ## Options
 
 * `templateFilePath`: Path to the template file.
-* `entrypointsDir`: Directory where the entrypoints are located.
+* `outDir`: The directory where the bundled scripts are outputted.
 * `cdn`: Whether to use a CDN for the script
 
 ## MIT License

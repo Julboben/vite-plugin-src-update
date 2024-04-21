@@ -5,7 +5,7 @@ import { config } from "process";
 
 interface vitePluginSrcUpdateOptions {
   templateFilePath: string;
-  entrypointsDir: string;
+  outDir?: string;
   cdn?: boolean;
 }
 
@@ -37,13 +37,13 @@ Do not attempt to modify this file directly, as any changes will be overwritten 
  *
  * @param {Object} options - The configuration options.
  * @param {string} options.templateFilePath - The path to the template file.
- * @param {string} options.entrypointsDir - The directory where the entrypoints are located.
+ * @param {string} [options.outDir] - The directory where the bundled scripts are outputted. If not provided, it defaults to the output directory specified in the Vite config.
  * @param {boolean} [options.cdn=false] - Whether to use a CDN for the script tags.
  * @returns {Plugin} - The Vite plugin object.
  */
 export default function vitePluginSrcUpdate({
   templateFilePath,
-  entrypointsDir,
+  outDir,
   cdn = false,
 }: vitePluginSrcUpdateOptions): Plugin {
   let isDevelopment = true;
@@ -110,6 +110,10 @@ export default function vitePluginSrcUpdate({
     configResolved(config) {
       resolvedConfig = config;
       isDevelopment = config.mode === "development";
+
+      if (!outDir) {
+        outDir = path.relative(config.root, config.build.outDir);
+      }
     },
 
     configureServer(server) {
@@ -147,7 +151,7 @@ export default function vitePluginSrcUpdate({
       // Loop over the bundle and conditionally append the necessary elements
       for (const file of Object.values(bundle)) {
         let tag = "";
-        const filePath = `${entrypointsDir}/${file.fileName}`;
+        const filePath = `${outDir}/${file.fileName}`;
 
         if (file.type === "chunk" && file.isEntry) {
           const scriptSrc = cdn ? `{{cdn '${filePath}'}}` : filePath;
