@@ -8,4 +8,5 @@ vite-build/
 
 # Vite tag #
 ######################
-vite-tag.html
+index.html
+site/
