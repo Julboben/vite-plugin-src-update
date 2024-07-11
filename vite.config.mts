@@ -7,12 +7,26 @@ export default defineConfig(({ mode }) => {
     server: {
       host: "localhost",
     },
-    resolve: {},
+    resolve: {
+      alias: {
+        "@": resolve("src"),
+      },
+    },
     plugins: [
-      vitePluginSrcUpdate({
-        templateFilePath: "index.html",
-        cdn: false,
-      }),
+      ...vitePluginSrcUpdate([
+        {
+          templateFilePath: "index.html",
+          outDir: "vite-build",
+          input: ["src/entrypoints/main.js", "src/entrypoints/main2.js"],
+        },
+        {
+          templateFilePath: "site/index.html",
+          outDir: "vite-build2",
+          input: [
+            "src/entrypoints2/main.js",
+          ],
+        },
+      ]),
     ],
     build: {
       outDir: resolve(__dirname, "vite-build"),
@@ -22,7 +36,7 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         input: {
           main: resolve(__dirname, "src/entrypoints/main.js"),
-          second: resolve(__dirname, "src/entrypoints/main-second.js"),
+          second: resolve(__dirname, "src/entrypoints/main2.js"),
         },
         output: {
           entryFileNames: `[name].bundle.[hash].js`,
@@ -30,7 +44,6 @@ export default defineConfig(({ mode }) => {
           assetFileNames: `[name].min.[hash].[ext]`,
         },
       },
-      plugins: [],
     },
   };
 });
