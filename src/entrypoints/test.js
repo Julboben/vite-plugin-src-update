@@ -1,2 +1,2 @@
-// main-test.js
+// test.js
 console.log(`${import.meta.url} loaded`);

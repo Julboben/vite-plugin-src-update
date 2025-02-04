@@ -20,6 +20,7 @@ export default {
     vitePluginSrcUpdate({
       templateFilePath: 'path/to/template.html',
       outDir: 'path/to/outDir',
+      input: ["src/entrypoints/example.js", "src/styles/example.css"],
       cdn: false
     })
   ]
@@ -28,9 +29,30 @@ export default {
 
 ## Options
 
-* `templateFilePath`: Path to the template file.
-* `outDir`: The directory where the bundled scripts are outputted.
-* `cdn`: Whether to use a CDN for the script
+* `templateFilePath`: Required -- Path to the template file.
+* `outDir`: The directory where the bundled scripts are outputted. If you don't specify outDir, it will use the build.outDir.
+* `input`: Array of entry points for the scripts and styles to be included in the template. If you don't specify input, it will use the rollupOptions input.
+* `cdn`: Whether to use a CDN for the script. Defaults to `false`.
+
+You can also pass an array of objects to update multiple template files.
+
+```ts
+export default {
+  plugins: [
+    vitePluginSrcUpdate([
+      {
+        templateFilePath: 'path/to/template.html',
+        input: ["src/entrypoints/example.js"],
+      },
+      {
+        templateFilePath: 'path/to/another/template.html',
+        outDir: 'path/to/outDir',
+        input: ["src/styles/example.css"],
+      },
+    ]),
+  ]
+}
+```
 
 ## MIT License
 

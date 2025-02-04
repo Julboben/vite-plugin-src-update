@@ -1,7 +1,7 @@
 {
   "name": "vite-plugin-src-update",
   "type": "module",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "`vite-plugin-src-update` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports configuration for development scripts, CDN usage, and custom template file paths.",
   "files": [
     "dist"
@@ -11,9 +11,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Julboben/vite-plugin-src-update"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
   },
   "keywords": [
     "vite",
@@ -27,7 +24,7 @@
     "@types/node": "^20.5.7"
   },
   "peerDependencies": {
-    "vite": "^5.2.10"
+    "vite": "^6.0.11"
   },
   "scripts": {
     "build": "tsc",
