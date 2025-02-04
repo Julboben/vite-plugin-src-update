@@ -5,3 +5,5 @@ tsconfig.json
 vite.config.mts
 index.html
 vite-build
+.nvmrc
+.npmrc

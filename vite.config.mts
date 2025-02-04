@@ -2,7 +2,7 @@ import { defineConfig } from "vite";
 import { resolve } from "node:path";
 import vitePluginSrcUpdate from "./dist";
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(() => {
   return {
     server: {
       host: "localhost",
@@ -12,22 +12,6 @@ export default defineConfig(({ mode }) => {
         "@": resolve("src"),
       },
     },
-    plugins: [
-      ...vitePluginSrcUpdate([
-        {
-          templateFilePath: "index.html",
-          outDir: "vite-build",
-          input: ["src/entrypoints/main.js", "src/entrypoints/main2.js"],
-        },
-        {
-          templateFilePath: "site/index.html",
-          outDir: "vite-build2",
-          input: [
-            "src/entrypoints2/main.js",
-          ],
-        },
-      ]),
-    ],
     build: {
       outDir: resolve(__dirname, "vite-build"),
       assetsDir: ".",
@@ -35,8 +19,10 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: true,
       rollupOptions: {
         input: {
+          // In this example main will be [name] in the template file when build.
           main: resolve(__dirname, "src/entrypoints/main.js"),
-          second: resolve(__dirname, "src/entrypoints/main2.js"),
+          test: resolve(__dirname, "src/entrypoints/test.js"),
+          cssJoker: resolve(__dirname, "src/styles/css-joker.css"),
         },
         output: {
           entryFileNames: `[name].bundle.[hash].js`,
@@ -45,5 +31,19 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    plugins: [
+      vitePluginSrcUpdate({
+        // Required - The path to the template file.
+        templateFilePath: "index.html",
+        // If you don't specify outDir, it will use the build.outDir.
+        outDir: "vite-build",
+        // If you don't specify input, it will use the rollupOptions input.
+        input: [
+          "src/entrypoints/main.js",
+          "src/entrypoints/test.js",
+          "src/styles/css-joker.css",
+        ],
+      }),
+    ],
   };
 });
