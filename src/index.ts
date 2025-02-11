@@ -87,10 +87,8 @@ function createVitePlugin({
     if (inputSet.size) {
       console.info("Using explicit dev scripts:", Array.from(inputSet));
       scripts = Array.from(inputSet).map((script) => {
-        // Normalize and prefix with dev server address.
         const normalized = normalizePath(script);
-        const prefix = normalized.startsWith("/") ? "" : "/";
-        return buildScriptTag(`${devServerAddress}${prefix}${normalized}`);
+        return buildScriptTag(`${devServerAddress}${basePath}${normalized}`);
       });
     } else {
       console.info("Using rollupOptions input for dev scripts.");
@@ -100,9 +98,8 @@ function createVitePlugin({
           const relativePath = normalizePath(
             path.relative(config.root, entryPath)
           );
-          const prefix = relativePath.startsWith("/") ? "" : "/";
           return buildScriptTag(
-            `${devServerAddress}${prefix}${basePath}${relativePath}`
+            `${devServerAddress}${basePath}${relativePath}`
           );
         });
       }
