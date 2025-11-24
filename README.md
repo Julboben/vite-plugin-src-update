@@ -54,6 +54,18 @@ export default {
 }
 ```
 
+## Publishing
+
+This package uses a GitHub Action to automatically publish to npm when changes are pushed to the `main` branch. The workflow:
+
+1. Checks out the code
+2. Sets up Node.js 20.x
+3. Installs dependencies
+4. Builds the package
+5. Publishes to npm
+
+To enable automated publishing, add an `NPM_TOKEN` secret to your repository settings with a valid npm access token.
+
 ## MIT License
 
 Copyright (c) 2024 Julian Bo Bendtsen
