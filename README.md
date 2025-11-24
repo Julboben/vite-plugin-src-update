@@ -68,7 +68,7 @@ To enable automated publishing, add an `NPM_TOKEN` secret to your repository set
 
 ## MIT License
 
-Copyright (c) 2024 Julian Bo Bendtsen
+Copyright (c) 2025 Julian Bo Bendtsen
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
