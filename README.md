@@ -2,6 +2,8 @@
 
 `vite-plugin-src-update` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports multiple coding languages, configuration for CDN usage, and custom template file path.
 
+Compatible with Vite 5, 6, 7 and 8 (Node.js `^20.19.0 || >=22.12.0`).
+
 ## Installation
 
 ```sh
@@ -13,7 +15,7 @@ npm install vite-plugin-src-update --save-dev
 Import the plugin in your `vite.config.js`:
 
 ```ts
-import vitePluginSrcUpdate from 'vite-plugin-src-update':
+import vitePluginSrcUpdate from 'vite-plugin-src-update';
 
 export default {
   plugins: [
@@ -30,9 +32,13 @@ export default {
 ## Options
 
 * `templateFilePath`: Required -- Path to the template file.
-* `outDir`: The directory where the bundled scripts are outputted. If you don't specify outDir, it will use the build.outDir.
-* `input`: Array of entry points for the scripts and styles to be included in the template. If you don't specify input, it will use the rollupOptions input.
-* `cdn`: Whether to use a CDN for the script. Defaults to `false`.
+* `outDir`: The directory where the bundled scripts are outputted. If you don't specify `outDir`, it will use `build.outDir`.
+* `input`: Array of entry points for the scripts and styles to be included in the template. If you don't specify `input`, it will use the `rolldownOptions`/`rollupOptions` input.
+* `cdn`: Whether to wrap built asset paths in a `{{cdn '...'}}` helper (e.g. BigCommerce Stencil's Handlebars CDN helper) so URLs are rewritten to the platform's CDN at render time. Defaults to `false`.
+* `injectClient`: Whether to inject Vite's HMR client (`@vite/client`) in dev mode so backend-served pages get hot module replacement. Defaults to `true`.
+* `verbose`: Log additional diagnostic information. Defaults to `false`.
+* `dryRun`: Compute the output without writing the template file. Defaults to `false`.
+* `commentTemplates`: Per-extension formatters for the auto-generated header comment. Defaults cover `.html`, `.liquid`, `.hbs` and `.cshtml`.
 
 You can also pass an array of objects to update multiple template files.
 
@@ -54,12 +60,25 @@ export default {
 }
 ```
 
+## What kinds of projects is this for?
+
+This plugin shines whenever Vite isn't the thing serving your HTML — i.e. a separate platform or backend renders the markup and just needs the right `<script>`/`<link>` tags pointing at your Vite assets. Because it writes a ready-to-include snippet (dev-server URLs while developing, hashed file paths after a build) directly into a template file, the host platform doesn't need to read a manifest or run any Vite integration at request time.
+
+Typical use cases include:
+
+* **E-commerce themes** — Shopify (Liquid), BigCommerce Stencil (Handlebars), and similar platforms where storefront templates are rendered server-side. The `cdn` option emits a `{{cdn '...'}}` helper for platforms that serve assets through their own CDN.
+* **Server-rendered .NET** — classic ASP.NET (non-Core) MVC / Web Forms `.cshtml` Razor views, where there's no first-party Vite tag helper to lean on.
+* **Other templating engines** — Handlebars, Mustache, and anything else where you'd otherwise hand-maintain the asset tags. Add your own extension to `commentTemplates` to format the generated header comment for it.
+* **Any multi-target build** — pass an array of configs to keep several template files (across different platforms) in sync from a single Vite build.
+
+Out of the box, the auto-generated header comment is formatted for `.html`, `.liquid`, `.hbs` and `.cshtml`, and you can extend it to any other extension.
+
 ## Publishing
 
 This package uses a GitHub Action to automatically publish to npm when changes are pushed to the `main` branch. The workflow:
 
 1. Checks out the code
-2. Sets up Node.js 20.x
+2. Sets up Node.js 22.x
 3. Installs dependencies
 4. Builds the package
 5. Publishes to npm
