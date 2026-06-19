@@ -1,14 +1,24 @@
-import { Plugin, ResolvedConfig, normalizePath } from "vite";
-import fs from "fs/promises";
-import path from "path";
+import { normalizePath } from "vite";
+import type { Plugin, ResolvedConfig } from "vite";
+import fs from "node:fs/promises";
+import path from "node:path";
 
-interface VitePluginSrcUpdateOptions {
+export interface VitePluginSrcUpdateOptions {
+  /** Path to the template file that will be (over)written with the asset tags. */
   templateFilePath: string;
+  /** Entry points to include. Falls back to the build input when omitted. */
   input?: string[];
+  /** Output directory used to prefix built asset paths. Falls back to `build.outDir`. */
   outDir?: string;
+  /** Wrap built asset paths in a `{{cdn '...'}}` helper (e.g. BigCommerce Stencil's Handlebars CDN helper). */
   cdn?: boolean;
+  /** Inject Vite's HMR client (`@vite/client`) in dev so backend pages get HMR. */
+  injectClient?: boolean;
+  /** Log additional diagnostic information. */
   verbose?: boolean;
+  /** Compute the output without writing the template file. */
   dryRun?: boolean;
+  /** Per-extension formatters for the auto-generated header comment. */
   commentTemplates?: Record<string, (comment: string) => string>;
 }
 
@@ -35,6 +45,7 @@ function createVitePlugin({
   templateFilePath,
   outDir,
   cdn = false,
+  injectClient = true,
   verbose = false,
   dryRun = false,
   commentTemplates = DEFAULT_COMMENT_TEMPLATES,
@@ -45,59 +56,72 @@ function createVitePlugin({
   const formatter = commentTemplates[templateExt] ?? ((c: string) => c);
   const autoComment = formatter(DEFAULT_COMMENT);
 
-  let isDev = true;
-  let devServerAddress = "";
+  let isBuild = false;
   let resolvedOutDir = outDir;
 
   const log = (msg: string) => verbose && console.info(PREFIX, msg);
   const logError = (msg: string, err?: unknown) =>
     console.error(PREFIX, msg, err ?? "");
 
-  async function writeTemplate(content: string): Promise<void> {
+  async function writeTemplate(tags: string[]): Promise<void> {
+    const content = [autoComment, ...tags].join("\n") + "\n";
     if (dryRun) {
       log(`[DRY RUN] Would update ${templateFile}:\n${content}`);
       return;
     }
-    await fs.writeFile(resolvedPath, content);
-    console.info(PREFIX, `${templateFile} updated`);
+    try {
+      // Skip no-op writes so backend file-watchers (Stencil CLI, dotnet watch,
+      // Shopify CLI, etc.) don't trigger needless reloads.
+      const current = await fs.readFile(resolvedPath, "utf8").catch(() => null);
+      if (current === content) {
+        log(`${templateFile} unchanged`);
+        return;
+      }
+      await fs.writeFile(resolvedPath, content);
+      log(`${templateFile} updated`);
+    } catch (err) {
+      logError(`Failed to update ${templateFile}:`, err);
+    }
   }
 
   function getAssetPath(fileName: string): string {
     const formatted = normalizePath(path.join(resolvedOutDir ?? "", fileName));
+    // e.g. BigCommerce Stencil rewrites `{{cdn '...'}}` to a CDN-hosted URL at render time.
     return cdn ? `{{cdn '${formatted}'}}` : formatted;
   }
 
   function getInputPaths(config: ResolvedConfig): string[] {
     if (input.length) return input;
 
-    const inputs = config.build.rollupOptions.input;
+    // `rolldownOptions` is the Vite 8 successor to `rollupOptions`; support both.
+    const buildOptions = config.build as ResolvedConfig["build"] & {
+      rolldownOptions?: { input?: string | string[] | Record<string, string> };
+    };
+    const inputs =
+      buildOptions.rolldownOptions?.input ?? config.build.rollupOptions?.input;
+
     if (!inputs) return [];
     if (typeof inputs === "string") return [inputs];
     if (Array.isArray(inputs)) return inputs;
     return Object.values(inputs);
   }
 
-  function scriptTag(src: string): string {
-    return `<script type="module" src="${src}"></script>`;
-  }
-
-  function styleTag(href: string): string {
-    return `<link rel="stylesheet" href="${href}">`;
-  }
+  const scriptTag = (src: string) =>
+    `<script type="module" src="${src}"></script>`;
+  const styleTag = (href: string) =>
+    `<link rel="stylesheet" href="${href}">`;
 
   return {
     name: "vite-plugin-src-update",
 
     configResolved(config) {
-      isDev = config.mode === "development";
+      isBuild = config.command === "build";
       resolvedOutDir ??= path.relative(config.root, config.build.outDir);
-      log(`${isDev ? "dev" : "prod"} mode, outDir: ${resolvedOutDir}`);
+      log(`${isBuild ? "build" : "dev"} mode, outDir: ${resolvedOutDir}`);
     },
 
     configureServer(server) {
-      if (!isDev) return;
-
-      server.httpServer?.on("listening", async () => {
+      server.httpServer?.once("listening", async () => {
         const addr = server.httpServer?.address();
         if (!addr || typeof addr !== "object") return;
 
@@ -105,26 +129,26 @@ function createVitePlugin({
         const host = ["", "::", "::1", "0.0.0.0"].includes(addr.address)
           ? "localhost"
           : addr.address;
-        devServerAddress = `${protocol}://${host}:${addr.port}`;
-
+        const origin = `${protocol}://${host}:${addr.port}`;
         const base = server.config.base || "/";
-        const tags = getInputPaths(server.config).map((p) => {
+
+        const tags = injectClient
+          ? [scriptTag(`${origin}${base}@vite/client`)]
+          : [];
+
+        for (const p of getInputPaths(server.config)) {
           const rel = path.isAbsolute(p)
             ? path.relative(server.config.root, p)
             : p;
-          return scriptTag(`${devServerAddress}${base}${normalizePath(rel)}`);
-        });
-
-        try {
-          await writeTemplate([autoComment, ...tags].join("\n") + "\n");
-        } catch (err) {
-          logError("Failed to update template:", err);
+          tags.push(scriptTag(`${origin}${base}${normalizePath(rel)}`));
         }
+
+        await writeTemplate(tags);
       });
     },
 
     async writeBundle(_options, bundle) {
-      if (isDev) return;
+      if (!isBuild) return;
 
       const tags = Object.values(bundle)
         .filter(
@@ -138,7 +162,7 @@ function createVitePlugin({
             : styleTag(getAssetPath(f.fileName))
         );
 
-      await writeTemplate([autoComment, ...tags].join("\n") + "\n");
+      await writeTemplate(tags);
     },
   };
 }
