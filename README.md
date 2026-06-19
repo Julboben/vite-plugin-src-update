@@ -78,12 +78,13 @@ Out of the box, the auto-generated header comment is formatted for `.html`, `.li
 This package uses a GitHub Action to automatically publish to npm when changes are pushed to the `main` branch. The workflow:
 
 1. Checks out the code
-2. Sets up Node.js 22.x
-3. Installs dependencies
-4. Builds the package
-5. Publishes to npm
+2. Sets up Node.js 24.x
+3. Upgrades npm (OIDC trusted publishing requires npm >= 11.5.1)
+4. Installs dependencies
+5. Builds the package
+6. Publishes to npm
 
-To enable automated publishing, add an `NPM_TOKEN` secret to your repository settings with a valid npm access token.
+Publishing uses [npm Trusted Publishing (OIDC)](https://docs.npmjs.com/trusted-publishers/) — no long-lived `NPM_TOKEN` is stored. The workflow authenticates with a short-lived, job-specific credential, so there is nothing to rotate. To set this up, add a Trusted Publisher in the package's settings on npmjs.com pointing at this repository and the `publish.yml` workflow, and keep the `id-token: write` permission in the workflow. Publishes also include [provenance](https://docs.npmjs.com/generating-provenance-statements) automatically.
 
 ## MIT License
 
