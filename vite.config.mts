@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
-import vitePluginSrcUpdate from "./dist";
+import vitePluginSrcUpdate from "./dist/index.js";
 
 export default defineConfig(() => {
   return {
@@ -9,20 +9,20 @@ export default defineConfig(() => {
     },
     resolve: {
       alias: {
-        "@": resolve("src"),
+        "@": resolve(import.meta.dirname, "src"),
       },
     },
     build: {
-      outDir: resolve(__dirname, "vite-build"),
+      outDir: resolve(import.meta.dirname, "vite-build"),
       assetsDir: ".",
       manifest: "manifest.json",
       emptyOutDir: true,
-      rollupOptions: {
+      rolldownOptions: {
         input: {
           // In this example main will be [name] in the template file when build.
-          main: resolve(__dirname, "src/entrypoints/main.js"),
-          test: resolve(__dirname, "src/entrypoints/test.js"),
-          cssJoker: resolve(__dirname, "src/styles/css-joker.css"),
+          main: resolve(import.meta.dirname, "src/entrypoints/main.js"),
+          test: resolve(import.meta.dirname, "src/entrypoints/test.js"),
+          cssJoker: resolve(import.meta.dirname, "src/styles/css-joker.css"),
         },
         output: {
           entryFileNames: `[name].bundle.[hash].js`,
@@ -37,7 +37,7 @@ export default defineConfig(() => {
         templateFilePath: "index.html",
         // If you don't specify outDir, it will use the build.outDir.
         outDir: "vite-build",
-        // If you don't specify input, it will use the rollupOptions input.
+        // If you don't specify input, it will use the rolldownOptions input.
         input: [
           "src/entrypoints/main.js",
           "src/entrypoints/test.js",
