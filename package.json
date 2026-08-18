@@ -22,11 +22,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Julboben/vite-src-update.git"
+    "url": "git+https://github.com/Julboben/vite-plugin-src-update.git"
   },
-  "homepage": "https://github.com/Julboben/vite-src-update#readme",
+  "homepage": "https://github.com/Julboben/vite-plugin-src-update#readme",
   "bugs": {
-    "url": "https://github.com/Julboben/vite-src-update/issues"
+    "url": "https://github.com/Julboben/vite-plugin-src-update/issues"
   },
   "keywords": [
     "vite",
