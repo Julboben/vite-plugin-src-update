@@ -105,8 +105,8 @@ This package uses a GitHub Action to automatically publish to npm when changes a
 2. Sets up Node.js 24.x
 3. Upgrades npm (OIDC trusted publishing requires npm >= 11.5.1)
 4. Installs dependencies
-5. Builds the package through `prepublishOnly`
-6. Publishes to npm
+5. Checks whether the package version already exists on npm
+6. Builds and publishes through `prepublishOnly` when the version is new
 
 Publishing uses [npm Trusted Publishing (OIDC)](https://docs.npmjs.com/trusted-publishers/) — no long-lived `NPM_TOKEN` is stored. The workflow authenticates with a short-lived, job-specific credential, so there is nothing to rotate. To set this up, add a Trusted Publisher in the package's settings on npmjs.com pointing at this repository and the `publish.yml` workflow, and keep the `id-token: write` permission in the workflow. Publishes also include [provenance](https://docs.npmjs.com/generating-provenance-statements) automatically.
 
