@@ -93,12 +93,8 @@ function createVitePlugin({
   function getInputPaths(config: ResolvedConfig): string[] {
     if (input.length) return input;
 
-    // `rolldownOptions` is the Vite 8 successor to `rollupOptions`; support both.
-    const buildOptions = config.build as ResolvedConfig["build"] & {
-      rolldownOptions?: { input?: string | string[] | Record<string, string> };
-    };
     const inputs =
-      buildOptions.rolldownOptions?.input ?? config.build.rollupOptions?.input;
+      config.build.rolldownOptions?.input ?? config.build.rollupOptions?.input;
 
     if (!inputs) return [];
     if (typeof inputs === "string") return [inputs];
