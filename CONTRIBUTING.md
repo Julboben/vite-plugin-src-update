@@ -40,7 +40,7 @@ npm install --no-save vite@5 && npm test
 npm ci # restore
 ```
 
-CI runs the tests for Node 20, 22 and 24 against Vite 5, 6, 7 and 8.
+CI runs the tests for Node 20, 22, 24 and 26 against Vite 5, 6, 7 and 8.
 
 ## Workflow
 
