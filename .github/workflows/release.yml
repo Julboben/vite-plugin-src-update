@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: Publish to npm
+    needs: ci
+    runs-on: ubuntu-latest # must be a GitHub-hosted runner for OIDC
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing (OIDC) and provenance
+    outputs:
+      published: ${{ steps.version.outputs.should_publish }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: "https://registry.npmjs.org"
+
+      # Trusted publishing requires npm >= 11.5.1; use the version pinned in package.json.
+      - name: Install npm from packageManager
+        run: npm install --global --ignore-scripts "$(node --print "require('./package.json').packageManager")"
+
+      - name: Check package version
+        id: version
+        run: |
+          PACKAGE_NAME=$(node --print "require('./package.json').name")
+          PACKAGE_VERSION=$(node --print "require('./package.json').version")
+          echo "version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version > /dev/null 2>&1; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is already published; skipping."
+          else
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Scripts are skipped so no dependency code runs while the OIDC token is
+      # available; the build runs explicitly instead of through prepublishOnly.
+      - name: Install dependencies
+        if: steps.version.outputs.should_publish == 'true'
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        if: steps.version.outputs.should_publish == 'true'
+        run: npm run build
+
+      - name: Publish
+        if: steps.version.outputs.should_publish == 'true'
+        run: npm publish --ignore-scripts
+
+  github-release:
+    name: Tag & GitHub release
+    needs: publish
+    if: needs.publish.outputs.published == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the tag and release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Extract release notes from CHANGELOG.md
+        env:
+          VERSION: ${{ needs.publish.outputs.version }}
+        run: |
+          node --eval '
+            const version = process.env.VERSION;
+            const changelog = require("fs").readFileSync("CHANGELOG.md", "utf8");
+            const section = changelog.split(/^## /m).find((s) => s.startsWith(`${version} `) || s.startsWith(`${version}\n`));
+            process.stdout.write(section ? section.slice(section.indexOf("\n") + 1).trim() + "\n" : "");
+          ' > release-notes.md
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.publish.outputs.version }}
+        run: |
+          if [ -s release-notes.md ]; then
+            NOTES=(--notes-file release-notes.md)
+          else
+            NOTES=(--generate-notes)
+          fi
+          gh release create "v${VERSION}" --target "$GITHUB_SHA" --title "v${VERSION}" "${NOTES[@]}"
