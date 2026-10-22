@@ -5,6 +5,8 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+## 2.1.1
+
 ### Fixed
 
 - `platform: "shopify"` now strips the `?v=` query that Shopify's `asset_url` adds. Chunks import each other by plain file name, so `modulepreload` links with the query pointed at a different URL and made the browser download those chunks twice.
