@@ -5,6 +5,8 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+## 2.1.0
+
 ### Added
 
 - `platform` option (`"bigcommerce"`, `"shopify"`, `"razor"`, `"webforms"`) for the URL helper and platform defaults. `assetUrl` is now only for custom functions, and can be combined with `platform`.
