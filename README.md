@@ -26,17 +26,17 @@ import { defineConfig } from "vite";
 import vitePluginSrcUpdate from "vite-plugin-src-update";
 
 export default defineConfig({
-  build: {
-    outDir: "dist",
-    rollupOptions: { input: ["src/main.js", "src/styles/print.css"] }, // rolldownOptions in Vite 8
-  },
+  build: { outDir: "dist" },
   plugins: [
     vitePluginSrcUpdate({
       templateFilePath: "templates/partials/vite-assets.html",
+      input: ["src/main.js", "src/styles/print.css"],
     }),
   ],
 });
 ```
+
+The plugin also uses `input` as Vite's build input, so you don't need `build.rollupOptions.input`. An `input` can be a folder: `input: ["src/entrypoints"]` makes every script and style file inside it an entry.
 
 Then include `templates/partials/vite-assets.html` from your layout. While `vite` is running it contains:
 
@@ -66,15 +66,12 @@ The file is only rewritten when its content changes, so file watchers (Stencil C
 
 ```ts
 export default defineConfig({
-  base: "./", // runtime chunk URLs relative to the CDN-hosted bundle
-  build: {
-    outDir: "assets/dist",
-    rollupOptions: { input: ["assets/js/app.js"] },
-  },
+  build: { outDir: "assets/dist" },
   plugins: [
     vitePluginSrcUpdate({
       templateFilePath: "templates/components/common/vite-assets.html",
-      assetUrl: "bigcommerce",
+      input: ["assets/js/app.js"],
+      platform: "bigcommerce",
     }),
   ],
 });
@@ -91,21 +88,25 @@ Include it with `{{> components/common/vite-assets}}` in `templates/layout/base.
 
 ```ts
 export default defineConfig({
-  base: "./",
   build: {
     outDir: "assets",
-    assetsDir: "", // Shopify's assets folder is flat
     emptyOutDir: false, // keep the theme's other assets
-    rollupOptions: { input: ["frontend/main.js"] },
   },
   plugins: [
     vitePluginSrcUpdate({
       templateFilePath: "snippets/vite-assets.liquid",
-      assetUrl: "shopify",
+      input: ["frontend/entrypoints"],
+      platform: "shopify",
+      // Optional: Shopify's theme hot reload, as vite-plugin-shopify adds it.
+      devTags: [
+        `<script type="module" id="hot-reload-client" src="https://cdn.jsdelivr.net/npm/@shopify/theme-hot-reload/dist/theme-hot-reload.min.js"></script>`,
+      ],
     }),
   ],
 });
 ```
+
+The `shopify` platform sets the Vite options Shopify needs (see [Platform defaults](#platform-defaults)), so there's no `base` or `assetsDir` to configure.
 
 ```liquid
 {% comment %} generated {% endcomment %}
@@ -118,14 +119,12 @@ Include it with `{% render 'vite-assets' %}` in `layout/theme.liquid`.
 
 ```ts
 export default defineConfig({
-  build: {
-    outDir: "Content/dist",
-    rollupOptions: { input: ["Scripts/src/main.ts"] },
-  },
+  build: { outDir: "Content/dist" },
   plugins: [
     vitePluginSrcUpdate({
       templateFilePath: "Views/Shared/_ViteAssets.cshtml",
-      assetUrl: "razor",
+      input: ["Scripts/src/main.ts"],
+      platform: "razor",
     }),
   ],
 });
@@ -150,7 +149,7 @@ Put markers straight into `Site.Master` (see [Updating part of a file](#updating
 ```
 
 ```ts
-vitePluginSrcUpdate({ templateFilePath: "Site.Master", assetUrl: "webforms" });
+vitePluginSrcUpdate({ templateFilePath: "Site.Master", input: ["src/main.ts"], platform: "webforms" });
 // writes: <script type="module" src="<%= ResolveUrl("~/dist/assets/main-8WQytZJj.js") %>"></script>
 ```
 
@@ -193,27 +192,70 @@ To prevent accidents, the plugin refuses to overwrite an existing file that has 
 
 ## Options
 
+Pass one options object, or an array of them to update several templates from one build.
+
+**Essentials**
+
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `templateFilePath` | `string` | **required** | Template file to update, relative to the current working directory. |
-| `input` | `string[]` | build input | Entries to include in this template, relative to the Vite root. During builds, the template gets these entries plus their CSS and shared chunks. |
+| `input` | `string[]` | build input | Entries for this template, relative to the Vite root. A folder includes every script and style file inside it. Builds include these entries plus their CSS and shared chunks. If Vite has no build input configured, all templates' inputs become the build input. |
+| `platform` | `"bigcommerce" \| "shopify" \| "razor" \| "webforms"` | – | Wraps built asset URLs in the platform's helper and sets [platform defaults](#platform-defaults). |
+
+**Built asset URLs**
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
 | `base` | `string` | see below | Public URL prefix for built assets, e.g. `/dist/` or `https://cdn.example.com/`. |
-| `assetUrl` | `"bigcommerce" \| "shopify" \| "razor" \| "webforms" \| (url, fileName) => string` | – | Wraps built asset URLs in a platform helper. |
+| `assetUrl` | `(url, fileName) => string` | – | Custom URL wrapper; takes precedence over the `platform` helper. |
+
+**Generated tags**
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
 | `attributes` | `Record<string, string \| boolean>` | `{}` | Extra attributes on every tag, inserted verbatim, e.g. `{ nonce: "{{ nonce }}" }`. |
 | `integrity` | `boolean` | `false` | Adds `integrity="sha384-…"` and `crossorigin` to built tags. |
 | `modulePreload` | `boolean` | `true` | Adds `<link rel="modulepreload">` for chunks the entries import. Off when `build.modulePreload` is `false`. |
 | `injectClient` | `boolean` | `true` | Injects Vite's HMR client (`@vite/client`) in dev. |
+| `devTags` | `string[] \| (origin) => string[]` | `[]` | Extra tags written after the HMR client in dev only, inserted verbatim. |
+
+**Template file**
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
 | `marker` | `string` | `"vite-plugin-src-update"` | Marker name for [partial updates](#updating-part-of-a-file). |
 | `force` | `boolean` | `false` | Overwrite a file this plugin didn't generate. |
 | `commentTemplates` | `Record<string, (comment) => string>` | built-in | Header comment formatters per extension, merged with the defaults. |
+
+**Debugging**
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
 | `dryRun` | `boolean` | `false` | Log the output instead of writing it. |
 | `verbose` | `boolean` | `false` | Log every template update. |
-| `outDir` | `string` | – | **Deprecated**, use `base`. Prefixes paths exactly as given, like 1.x. |
-| `cdn` | `boolean` | `false` | **Deprecated**, use `assetUrl: "bigcommerce"`. |
+
+Unknown options are reported as warnings, so typos don't go unnoticed.
+
+**Deprecated** (still work, with a warning)
+
+| Option | Use instead |
+| --- | --- |
+| `assetUrl: "<platform>"` | `platform: "<platform>"` |
+| `cdn: true` | `platform: "bigcommerce"` |
+| `outDir` | `base` (`outDir` keeps 1.x's paths without a leading slash) |
 
 **Default `base`:** your Vite `base` if you set it to an absolute path or URL. Otherwise the plugin uses `/<build.outDir relative to the root>/`, e.g. `/dist/`. If `build.outDir` is outside the Vite root, the URL can't be inferred; set `base` (you'll get a warning).
 
-Pass an array of option objects to update several templates from one build.
+
+### Platform defaults
+
+The `bigcommerce` and `shopify` platforms fill in Vite options they need. They only apply when you haven't set the option yourself:
+
+| Platform | Vite option | Default | Why |
+| --- | --- | --- | --- |
+| `bigcommerce`, `shopify` | `base` | `"./"` | Chunks, fonts and images are loaded relative to the file that references them, so they come from the CDN instead of the store's domain. |
+| `shopify` | `build.assetsDir` | `""` | Shopify's `assets` folder is flat. |
+| `shopify` | `server.cors` | `localhost`, `127.0.0.1` and `https://*.myshopify.com` | Theme previews on `myshopify.com` can load scripts from the dev server. |
 
 ## Tips
 
@@ -225,7 +267,7 @@ Without it, the plugin uses the configured `server.host` name, or `localhost`. W
 
 ### CORS
 
-Vite's dev server only allows cross-origin requests from `localhost`/`127.0.0.1` pages by default. If your backend runs on another host name (e.g. `https://shop.local`), add it to [`server.cors`](https://vite.dev/config/server-options#server-cors):
+Vite's dev server only allows cross-origin requests from `localhost`/`127.0.0.1` pages by default (the `shopify` platform also allows `*.myshopify.com`). If your backend runs on another host name (e.g. `https://shop.local`), add it to [`server.cors`](https://vite.dev/config/server-options#server-cors):
 
 ```ts
 server: { cors: { origin: "https://shop.local" } }
@@ -257,6 +299,24 @@ After `vite` (dev) stops, the template still points at the dev server until the 
 
 If the template is a dedicated generated file, gitignore it and let your build or deploy pipeline create it. If it lives in a committed layout (markers), commit the build output, not the dev output.
 
+## Coming from vite-plugin-shopify
+
+Replace `shopify({ … })` with:
+
+```ts
+vitePluginSrcUpdate({
+  templateFilePath: "snippets/vite-tag.liquid",
+  input: ["frontend/entrypoints/theme.ts"], // what the layout renders
+  platform: "shopify",
+  devTags: [/* theme hot reload, see the Shopify recipe */],
+});
+```
+
+- Set `build.outDir` (e.g. `"assets"`), and add `build.rollupOptions.input` with all entries if some are built but not rendered through the snippet.
+- `vite-plugin-shopify` decides per `render 'vite-tag', entry: '…'` call which entry to load. This plugin writes a fixed list of tags per file, so use one template per combination of entries. Existing `render 'vite-tag' with 'theme.ts'` calls keep working, because the parameter is ignored.
+- Delete the old generated `snippets/vite-tag.liquid` once. The plugin won't overwrite a file another tool generated.
+- Its `~/` and `@/` import aliases aren't added; define them in `resolve.alias` if your code uses them.
+
 ## Migrating from 1.x
 
 See the [2.0.0 changelog](./CHANGELOG.md#200) for breaking changes and migration steps. In short:
@@ -264,7 +324,7 @@ See the [2.0.0 changelog](./CHANGELOG.md#200) for breaking changes and migration
 - Built URLs now start with `/`.
 - `input` now filters build output per template.
 - Hand-written files are no longer overwritten without markers or `force`.
-- `outDir` is now `base`, and `cdn: true` is now `assetUrl: "bigcommerce"`.
+- `outDir` is now `base`, and `cdn: true` is now `platform: "bigcommerce"`.
 
 ## Contributing
 

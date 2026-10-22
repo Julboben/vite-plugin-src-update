@@ -48,7 +48,7 @@ function recordingLogger() {
 /** Runs a production build with the plugin and returns the logged messages. */
 export async function runBuild(root, pluginOptions, viteConfig = {}) {
   const { logger, messages } = recordingLogger();
-  const { build: buildConfig, ...rest } = viteConfig;
+  const { build: buildConfig, plugins = [], ...rest } = viteConfig;
   await build({
     root,
     configFile: false,
@@ -64,7 +64,7 @@ export async function runBuild(root, pluginOptions, viteConfig = {}) {
       },
       ...buildConfig,
     },
-    plugins: [srcUpdate(pluginOptions)],
+    plugins: [srcUpdate(pluginOptions), ...plugins],
   });
   return messages;
 }
@@ -80,7 +80,7 @@ export async function runDev(root, file, pluginOptions, viteConfig = {}) {
     optimizeDeps: { noDiscovery: true },
     ...viteConfig,
     server: { host: "127.0.0.1", port: 0, ...viteConfig.server },
-    plugins: [srcUpdate(pluginOptions)],
+    plugins: [srcUpdate(pluginOptions), ...(viteConfig.plugins ?? [])],
   });
   try {
     if (server.httpServer) await server.listen();
@@ -101,6 +101,17 @@ async function waitForFile(file, timeout = 5000) {
     }
   }
   throw new Error(`${file} was not written within ${timeout}ms`);
+}
+
+/** A plugin that captures Vite's resolved config into `probe.config`. */
+export function configProbe() {
+  const probe = {
+    name: "config-probe",
+    configResolved(config) {
+      probe.config = config;
+    },
+  };
+  return probe;
 }
 
 /** Returns the generated `<script>` and `<link>` tags, trimmed. */

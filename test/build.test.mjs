@@ -76,7 +76,7 @@ describe("build", () => {
       const file = path.join(root, "t.html");
       const messages = await runBuild(root, { templateFilePath: file, outDir: "vite-build" });
       assert.match(await firstUrl(root, file), /^vite-build\/assets\/main-/);
-      assert.ok(messages.some((m) => m.includes(`"outDir" is deprecated`)));
+      assert.ok(messages.some((m) => m.includes("outDir is deprecated, use base.")));
     });
 
     test("warns when build.outDir is outside the root", async () => {
@@ -92,60 +92,69 @@ describe("build", () => {
     });
   });
 
-  describe("assetUrl", () => {
+  describe("platform and assetUrl", () => {
     const cases = {
-      bigcommerce: /^<link rel="stylesheet" href="\{\{cdn '\/dist\/assets\/main-[\w-]+\.css'\}\}">$/,
+      bigcommerce: /^<link rel="stylesheet" href="\{\{cdn '\.?\/dist\/(?:assets\/)?main-[\w-]+\.css'\}\}">$/,
       shopify: /^<link rel="stylesheet" href="\{\{ 'main-[\w-]+\.css' \| asset_url \}\}">$/,
       razor: /^<link rel="stylesheet" href="@Url\.Content\("~\/dist\/assets\/main-[\w-]+\.css"\)">$/,
       webforms: /^<link rel="stylesheet" href="<%= ResolveUrl\("~\/dist\/assets\/main-[\w-]+\.css"\) %>">$/,
     };
+    const firstTag = async (pluginOptions, viteConfig) => {
+      const root = await fixture();
+      const file = path.join(root, "t.html");
+      const messages = await runBuild(root, { templateFilePath: file, ...pluginOptions }, viteConfig);
+      return { tag: tagsOf(await read(file))[0], messages };
+    };
 
-    for (const [preset, expected] of Object.entries(cases)) {
-      test(`"${preset}" preset`, async () => {
-        const root = await fixture();
-        const file = path.join(root, "t.html");
-        await runBuild(
-          root,
-          { templateFilePath: file, assetUrl: preset },
-          preset === "shopify" ? { build: { assetsDir: "" } } : {}
-        );
-        const [first] = tagsOf(await read(file));
-        assert.match(first, expected);
+    for (const [platform, expected] of Object.entries(cases)) {
+      test(`platform: "${platform}"`, async () => {
+        const { tag, messages } = await firstTag({ platform });
+        assert.match(tag, expected);
+        assert.ok(!messages.some((m) => m.includes("deprecated")));
       });
     }
 
-    test("cdn: true is an alias for the bigcommerce preset", async () => {
-      const root = await fixture();
-      const file = path.join(root, "t.html");
-      await runBuild(root, { templateFilePath: file, cdn: true });
-      assert.match(tagsOf(await read(file))[0], cases.bigcommerce);
-    });
-
-    test("custom function receives the URL and file name", async () => {
-      const root = await fixture();
-      const file = path.join(root, "t.html");
-      await runBuild(root, {
-        templateFilePath: file,
+    test("a custom assetUrl overrides the platform helper but keeps its defaults", async () => {
+      const { tag } = await firstTag({
+        platform: "shopify",
         assetUrl: (url, fileName) => `${url}|${fileName}`,
       });
-      assert.match(tagsOf(await read(file))[0], /href="\/dist\/assets\/main-[\w-]+\.css\|assets\/main-[\w-]+\.css"/);
+      // Flat output (assetsDir: "") comes from the shopify platform defaults.
+      assert.match(tag, /href="\/dist\/main-[\w-]+\.css\|main-[\w-]+\.css"/);
     });
 
-    test("warns when the shopify preset is used with an assets subfolder", async () => {
-      const root = await fixture();
-      const messages = await runBuild(root, {
-        templateFilePath: path.join(root, "t.liquid"),
-        assetUrl: "shopify",
-      });
+    test("deprecated assetUrl: \"<platform>\" still works and warns", async () => {
+      const { tag, messages } = await firstTag({ assetUrl: "razor" });
+      assert.match(tag, cases.razor);
+      assert.ok(messages.some((m) => m.includes(`assetUrl: "razor" is deprecated, use platform: "razor"`)));
+    });
+
+    test("deprecated cdn: true still works and warns", async () => {
+      const { tag, messages } = await firstTag({ cdn: true });
+      assert.match(tag, cases.bigcommerce);
+      assert.ok(messages.some((m) => m.includes(`cdn is deprecated, use platform: "bigcommerce"`)));
+    });
+
+    test("warns when the shopify platform is used with an assets subfolder", async () => {
+      const { messages } = await firstTag({ platform: "shopify" }, { build: { assetsDir: "assets" } });
       assert.ok(messages.some((m) => m.includes("flat folder")));
     });
 
-    test("rejects unknown presets", () => {
+    test("rejects unknown platforms", () => {
       assert.throws(
-        () => srcUpdate({ templateFilePath: "t.html", assetUrl: "magento" }),
-        /Unknown assetUrl preset "magento"/
+        () => srcUpdate({ templateFilePath: "t.html", platform: "magento" }),
+        /Unknown platform "magento"/
       );
     });
+  });
+
+  test("warns about unknown options", async () => {
+    const root = await fixture();
+    const messages = await runBuild(root, {
+      templateFilePath: path.join(root, "t.html"),
+      templatePath: "typo.html",
+    });
+    assert.ok(messages.some((m) => m.includes(`Unknown option "templatePath" is ignored.`)));
   });
 
   test("adds attributes and integrity hashes", async () => {

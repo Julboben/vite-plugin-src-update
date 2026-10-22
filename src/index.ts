@@ -7,51 +7,52 @@ import {
   type BuildInput,
   type BundleFile,
 } from "./build.js";
-import type { VitePluginSrcUpdateOptions } from "./options.js";
 import {
-  ASSET_URL_PRESETS,
-  encodeFileName,
-  moduleScript,
-  renderTag,
-  type HtmlTag,
-} from "./tags.js";
+  checkOptions,
+  defaultsPlugin,
+  NAME,
+  PREFIX,
+  resolvePlatform,
+} from "./config.js";
+import { expandInputs } from "./inputs.js";
+import type { VitePluginSrcUpdateOptions } from "./options.js";
+import { encodeFileName, moduleScript, renderTag } from "./tags.js";
 import { getTemplateFormat, writeTemplate } from "./template.js";
 
 export type {
   AssetUrlFunction,
   AssetUrlPreset,
+  Platform,
   VitePluginSrcUpdateOptions,
 } from "./options.js";
 export { DEFAULT_COMMENT_TEMPLATES } from "./template.js";
 
-const NAME = "vite-plugin-src-update";
-const PREFIX = `[${NAME}]`;
-
 export default function vitePluginSrcUpdate(
   options: VitePluginSrcUpdateOptions | VitePluginSrcUpdateOptions[]
 ): Plugin[] {
-  return (Array.isArray(options) ? options : [options]).map(createPlugin);
+  const list = Array.isArray(options) ? options : [options];
+  return [defaultsPlugin(list), ...list.map(createPlugin)];
 }
 
 export { vitePluginSrcUpdate };
 
-function createPlugin({
-  templateFilePath,
-  input = [],
-  base,
-  outDir,
-  assetUrl,
-  cdn = false,
-  attributes = {},
-  integrity = false,
-  modulePreload,
-  injectClient = true,
-  marker = NAME,
-  force = false,
-  verbose = false,
-  dryRun = false,
-  commentTemplates,
-}: VitePluginSrcUpdateOptions): Plugin {
+function createPlugin(options: VitePluginSrcUpdateOptions): Plugin {
+  const {
+    templateFilePath,
+    input = [],
+    base,
+    outDir,
+    attributes = {},
+    integrity = false,
+    modulePreload,
+    injectClient = true,
+    devTags = [],
+    marker = NAME,
+    force = false,
+    verbose = false,
+    dryRun = false,
+    commentTemplates,
+  } = options;
   if (!templateFilePath) {
     throw new Error(`${PREFIX} The "templateFilePath" option is required.`);
   }
@@ -59,14 +60,8 @@ function createPlugin({
   const filePath = path.resolve(templateFilePath);
   const fileLabel = path.relative(process.cwd(), filePath) || filePath;
   const format = getTemplateFormat(filePath, commentTemplates);
-  const preset = assetUrl ?? (cdn ? "bigcommerce" : undefined);
-  if (typeof preset === "string" && !(preset in ASSET_URL_PRESETS)) {
-    throw new Error(
-      `${PREFIX} Unknown assetUrl preset "${preset}". Use one of: ${Object.keys(ASSET_URL_PRESETS).join(", ")}, or a function.`
-    );
-  }
-  const wrapUrl =
-    typeof preset === "string" ? ASSET_URL_PRESETS[preset] : preset;
+  const { platform, wrapUrl } = resolvePlatform(options);
+  const warnings = checkOptions(options);
 
   let config: ResolvedConfig;
   let logger: Logger;
@@ -92,17 +87,15 @@ function createPlugin({
     if (typeof inputs === "string") inputs = [inputs];
     if (!Array.isArray(inputs)) inputs = Object.values(inputs);
 
-    return (inputs as string[]).map((p) => {
-      const absolute = path.resolve(config.root, p);
-      const relative = normalizePath(path.relative(config.root, absolute));
-      return { absolute, relative };
-    });
+    return expandInputs(inputs as string[], config.root).map((absolute) => ({
+      absolute,
+      relative: normalizePath(path.relative(config.root, absolute)),
+    }));
   }
 
   function resolveBase(): string {
     if (base !== undefined) return withTrailingSlash(base);
     if (outDir !== undefined) {
-      warn(`"outDir" is deprecated, use "base" instead.`);
       return withTrailingSlash(normalizePath(outDir));
     }
     if (userSetBase && !isRelativeBase(config.base)) return config.base;
@@ -120,8 +113,7 @@ function createPlugin({
     return relative ? `/${relative}/` : "/";
   }
 
-  async function update(tags: HtmlTag[]): Promise<void> {
-    const rendered = tags.map(renderTag);
+  async function update(rendered: string[]): Promise<void> {
     if (dryRun) {
       info(`[dry run] ${fileLabel} would contain:\n${rendered.join("\n")}`);
       return;
@@ -140,18 +132,19 @@ function createPlugin({
     const devBase = withTrailingSlash(server.config.base || "/");
     const url = (p: string) => format.escape(`${origin}${devBase}${p}`);
 
-    const tags = injectClient
-      ? [moduleScript(url("@vite/client"), attributes)]
+    const client = injectClient
+      ? [renderTag(moduleScript(url("@vite/client"), attributes))]
       : [];
-    for (const { absolute, relative } of getInputs()) {
+    const extra = typeof devTags === "function" ? devTags(origin) : devTags;
+    const entries = getInputs().map(({ absolute, relative }) => {
       // Vite serves files outside the root from /@fs/<absolute path>.
       const urlPath = relative.startsWith("..")
         ? `@fs/${normalizePath(absolute).replace(/^\//, "")}`
         : relative;
-      tags.push(moduleScript(url(urlPath), attributes));
-    }
+      return renderTag(moduleScript(url(urlPath), attributes));
+    });
 
-    update(tags).catch((err) =>
+    update([...client, ...extra, ...entries]).catch((err) =>
       logger.error(`${PREFIX} Failed to update ${fileLabel}: ${err.message}`, {
         error: err,
       })
@@ -168,9 +161,10 @@ function createPlugin({
     configResolved(resolved) {
       config = resolved;
       logger = resolved.logger;
+      warnings.forEach(warn);
       if (config.command === "build") {
         assetBase = resolveBase();
-        if (wrapUrl === ASSET_URL_PRESETS.shopify && config.build.assetsDir) {
+        if (platform === "shopify" && config.build.assetsDir) {
           warn(
             `Shopify serves theme assets from a flat folder. Set build.assetsDir ` +
               `to "" so the asset_url filter can find "${config.build.assetsDir}/…" files.`
@@ -249,7 +243,7 @@ function createPlugin({
       }
 
       try {
-        await update(tags);
+        await update(tags.map(renderTag));
       } catch (err) {
         this.error(`Failed to update ${fileLabel}: ${(err as Error).message}`);
       }

@@ -1,14 +1,12 @@
 import { copyFileSync, existsSync } from "node:fs";
-import { basename, extname, resolve } from "node:path";
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import vitePluginSrcUpdate from "../src/index.js";
 
 const root = import.meta.dirname;
-const input = [
-  "src/entrypoints/main.js",
-  "src/entrypoints/second.js",
-  "src/styles/entry.css",
-];
+// Every file in src/entrypoints is an entry; the plugin also makes these the
+// build input, so no build.rolldownOptions.input is needed.
+const input = ["src/entrypoints", "src/styles/entry.css"];
 
 // index.html is gitignored and created from index.shell.html, so the tags the
 // plugin writes between its markers never show up as changes in git.
@@ -20,39 +18,33 @@ if (!existsSync(indexHtml)) {
 export default defineConfig({
   build: {
     outDir: "dist",
-    // Flat output, as Shopify's `asset_url` filter requires.
-    assetsDir: "",
     emptyOutDir: true,
-    rolldownOptions: {
-      input: Object.fromEntries(
-        input.map((p) => [basename(p, extname(p)), resolve(root, p)])
-      ),
-    },
   },
   plugins: [
     vitePluginSrcUpdate([
       // Updates the tags between the markers in index.html.
       { templateFilePath: indexHtml, input, verbose: true },
-      // Generated partials showing the output for each platform preset.
+      // Generated partials showing the output for each platform.
+      // The shopify platform also makes the build output flat (assetsDir: "").
       {
         templateFilePath: resolve(root, "templates/vite-assets.liquid"),
         input,
-        assetUrl: "shopify",
+        platform: "shopify",
       },
       {
         templateFilePath: resolve(root, "templates/vite-assets.html"),
         input,
-        assetUrl: "bigcommerce",
+        platform: "bigcommerce",
       },
       {
         templateFilePath: resolve(root, "templates/_ViteAssets.cshtml"),
         input,
-        assetUrl: "razor",
+        platform: "razor",
       },
       {
         templateFilePath: resolve(root, "templates/ViteAssets.inc"),
         input,
-        assetUrl: "webforms",
+        platform: "webforms",
       },
     ]),
   ],

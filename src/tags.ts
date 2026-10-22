@@ -1,4 +1,4 @@
-import type { AssetUrlFunction, AssetUrlPreset } from "./options.js";
+import type { AssetUrlFunction, Platform } from "./options.js";
 
 export type Attributes = Record<string, string | boolean | undefined>;
 
@@ -9,7 +9,7 @@ export interface HtmlTag {
   children?: string;
 }
 
-export const ASSET_URL_PRESETS: Record<AssetUrlPreset, AssetUrlFunction> = {
+export const PLATFORM_URLS: Record<Platform, AssetUrlFunction> = {
   bigcommerce: (url) => `{{cdn '${url}'}}`,
   shopify: (_url, fileName) => `{{ '${fileName}' | asset_url }}`,
   razor: (url) => `@Url.Content("${toAppRelative(url)}")`,

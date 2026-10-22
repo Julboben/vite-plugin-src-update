@@ -13,8 +13,10 @@ npm ci
 | Path | Purpose |
 | --- | --- |
 | `src/index.ts` | The plugin: options, Vite hooks, dev server origin |
+| `src/config.ts` | Option checks, platform resolution and the Vite defaults applied once for all templates (build input, platform defaults) |
+| `src/inputs.ts` | Expands input folders into entry files |
 | `src/build.ts` | Turns the build output into tags (input filtering, CSS, preloads, legacy) |
-| `src/tags.ts` | Tag rendering and `assetUrl` presets |
+| `src/tags.ts` | Tag rendering and the URL helper per platform |
 | `src/template.ts` | Header comments per extension, markers and safe writes |
 | `test/` | `node:test` suites that run real Vite builds and dev servers against `dist/` |
 | `playground/` | A demo project using the plugin from `src/` |
@@ -31,7 +33,7 @@ npm ci
 | `npm run playground:build` | Build the playground and update its templates |
 | `npm run playground:preview` | Build, then serve the playground from a plain Node server, like a backend would |
 
-The playground writes its generated templates to `playground/templates/` (one per `assetUrl` preset) and updates the tags between the markers in `playground/index.html`. Both are gitignored.
+The playground writes its generated templates to `playground/templates/` (one per platform) and updates the tags between the markers in `playground/index.html`. Both are gitignored.
 
 To test against another Vite major version locally:
 

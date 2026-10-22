@@ -5,6 +5,24 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+### Added
+
+- `platform` option (`"bigcommerce"`, `"shopify"`, `"razor"`, `"webforms"`) for the URL helper and platform defaults. `assetUrl` is now only for custom functions, and can be combined with `platform`.
+- Warnings for unknown options, so typos like `templatePath` don't go unnoticed.
+- `input` accepts folders: every script and style file inside becomes an entry.
+- When Vite has no build input configured, the templates' inputs become the build input, so `build.rollupOptions.input` is optional.
+- Platform defaults for Vite options you haven't set. `"bigcommerce"` and `"shopify"` set `base: "./"`, so chunks, fonts and images load from the CDN. `"shopify"` also sets `build.assetsDir: ""` and allows `https://*.myshopify.com` in `server.cors`.
+- `devTags` option for extra dev-only tags, e.g. Shopify's theme hot reload.
+- README section on switching from `vite-plugin-shopify`, and options grouped by purpose.
+
+### Changed
+
+- With the `"bigcommerce"` or `"shopify"` platform and no `base` set, Vite now builds with `base: "./"` instead of `"/"`. Before, dynamically imported chunks and CSS `url()`s pointed at the store's own domain instead of the CDN. Set `base` to keep the old behaviour.
+
+### Deprecated
+
+- `assetUrl: "<platform>"`: use `platform: "<platform>"`. `cdn: true` (use `platform: "bigcommerce"`) now warns too, like `outDir`.
+
 ## 2.0.0
 
 ### Breaking changes
