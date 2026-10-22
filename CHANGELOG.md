@@ -5,6 +5,8 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+## 2.0.0
+
 ### Breaking changes
 
 - **Built asset URLs are root-relative by default.** 1.x wrote `vite-build/main.js`, which browsers resolve against the current page (`/products/shoe/vite-build/main.js`). 2.0 writes `/vite-build/main.js`, or uses Vite's `base` when you set it. Use the new `base` option to control the prefix.
