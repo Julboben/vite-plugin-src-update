@@ -1,9 +1,16 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Version bump
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
 
 permissions: {}
 
@@ -13,23 +20,60 @@ concurrency:
 
 jobs:
   ci:
+    if: github.ref == 'refs/heads/main'
     uses: ./.github/workflows/ci.yml
     permissions:
       contents: read
 
+  version:
+    name: Bump version & tag
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the release commit and tag
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      # No dependencies are installed in this job, so no third-party code runs
+      # while it can push to the repository.
+      - name: Bump version and roll CHANGELOG.md
+        id: bump
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: |
+          npm version "$BUMP" --no-git-tag-version --ignore-scripts
+          VERSION=$(node --print "require('./package.json').version")
+          node scripts/changelog.mjs release "$VERSION"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit, tag and push
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --all --message "Release v${VERSION}"
+          git tag --annotate "v${VERSION}" --message "v${VERSION}"
+          # Atomic: either both the commit and the tag land, or neither does.
+          git push --atomic origin HEAD:main "v${VERSION}"
+
   publish:
     name: Publish to npm
-    needs: ci
+    needs: version
     runs-on: ubuntu-latest # must be a GitHub-hosted runner for OIDC
     permissions:
       contents: read
       id-token: write # npm trusted publishing (OIDC) and provenance
-    outputs:
-      published: ${{ steps.version.outputs.should_publish }}
-      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: v${{ needs.version.outputs.version }}
           persist-credentials: false
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -41,65 +85,42 @@ jobs:
       - name: Install npm from packageManager
         run: npm install --global --ignore-scripts "$(node --print "require('./package.json').packageManager")"
 
-      - name: Check package version
-        id: version
-        run: |
-          PACKAGE_NAME=$(node --print "require('./package.json').name")
-          PACKAGE_VERSION=$(node --print "require('./package.json').version")
-          echo "version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
-
-          if npm view "${PACKAGE_NAME}@${PACKAGE_VERSION}" version > /dev/null 2>&1; then
-            echo "should_publish=false" >> "$GITHUB_OUTPUT"
-            echo "${PACKAGE_NAME}@${PACKAGE_VERSION} is already published; skipping."
-          else
-            echo "should_publish=true" >> "$GITHUB_OUTPUT"
-          fi
-
       # Scripts are skipped so no dependency code runs while the OIDC token is
       # available; the build runs explicitly instead of through prepublishOnly.
-      - name: Install dependencies
-        if: steps.version.outputs.should_publish == 'true'
-        run: npm ci --ignore-scripts
-
-      - name: Build
-        if: steps.version.outputs.should_publish == 'true'
-        run: npm run build
+      - run: npm ci --ignore-scripts
+      - run: npm run build
 
       - name: Publish
-        if: steps.version.outputs.should_publish == 'true'
-        run: npm publish --ignore-scripts
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          NAME=$(node --print "require('./package.json').name")
+          if npm view "${NAME}@${VERSION}" version > /dev/null 2>&1; then
+            echo "${NAME}@${VERSION} is already published; skipping."
+          else
+            npm publish --ignore-scripts
+          fi
 
   github-release:
-    name: Tag & GitHub release
-    needs: publish
-    if: needs.publish.outputs.published == 'true'
+    name: GitHub release
+    needs: [version, publish]
     runs-on: ubuntu-latest
     permissions:
-      contents: write # create the tag and release
+      contents: write # create the release
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: v${{ needs.version.outputs.version }}
           persist-credentials: false
 
-      - name: Extract release notes from CHANGELOG.md
-        env:
-          VERSION: ${{ needs.publish.outputs.version }}
-        run: |
-          node --eval '
-            const version = process.env.VERSION;
-            const changelog = require("fs").readFileSync("CHANGELOG.md", "utf8");
-            const section = changelog.split(/^## /m).find((s) => s.startsWith(`${version} `) || s.startsWith(`${version}\n`));
-            process.stdout.write(section ? section.slice(section.indexOf("\n") + 1).trim() + "\n" : "");
-          ' > release-notes.md
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
 
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ needs.publish.outputs.version }}
+          VERSION: ${{ needs.version.outputs.version }}
         run: |
-          if [ -s release-notes.md ]; then
-            NOTES=(--notes-file release-notes.md)
-          else
-            NOTES=(--generate-notes)
-          fi
-          gh release create "v${VERSION}" --target "$GITHUB_SHA" --title "v${VERSION}" "${NOTES[@]}"
+          node scripts/changelog.mjs notes "$VERSION" > release-notes.md
+          gh release create "v${VERSION}" --verify-tag --title "v${VERSION}" --notes-file release-notes.md

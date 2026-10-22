@@ -1,9 +1,9 @@
 # Changelog
 
-All notable changes to this project are documented here. The release workflow
-uses the section matching the version in `package.json` as the GitHub release notes.
+All notable changes to this project are documented here. Add notes under `## Unreleased` as you
+work; the release workflow turns that section into the new version and uses it as the GitHub release notes.
 
-## 2.0.0
+## Unreleased
 
 ### Breaking changes
 
