@@ -1,12 +1,8 @@
 node_modules/
 dist/
-vite-build/
+*.tgz
 .DS_Store
-.bundle
-*.js.map
-*.zip
 
-# Vite tag #
-######################
-index.html
-site/
+# Playground output, regenerated on every run
+playground/index.html
+playground/templates/

@@ -2,18 +2,19 @@
   "name": "vite-plugin-src-update",
   "type": "module",
   "version": "1.1.4",
-  "description": "`vite-plugin-src-update` is a Vite plugin that automatically updates a template file with development or production script tags for your project assets, ensuring the correct scripts are loaded depending on your build environment. It supports configuration for development scripts, CDN usage, and custom template file paths.",
+  "description": "Vite plugin that writes dev-server or built asset tags into backend templates (Shopify Liquid, BigCommerce Stencil, ASP.NET Razor/Web Forms, Twig and more).",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "sideEffects": false,
   "packageManager": "npm@12.0.2",
@@ -30,25 +31,41 @@
   },
   "keywords": [
     "vite",
-    "vite-plugin"
+    "vite-plugin",
+    "backend-integration",
+    "template",
+    "shopify",
+    "liquid",
+    "bigcommerce",
+    "stencil",
+    "handlebars",
+    "aspnet",
+    "razor",
+    "cshtml",
+    "webforms",
+    "twig"
   ],
   "author": "Julian Bo Bendtsen (https://julben.dk)",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^24.13.3",
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@types/node": "^20.19.43",
+    "publint": "^0.3.25",
     "typescript": "^7.0.2",
-    "vite": "^8.2.1"
+    "vite": "^8.3.5"
   },
   "peerDependencies": {
     "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0"
   },
   "scripts": {
-    "clean": "rm -rf dist",
-    "build": "npm run clean && tsc",
-    "check": "tsc --noEmit",
-    "vite:dev": "vite",
-    "vite:build": "vite build",
-    "prepublishOnly": "npm run build",
-    "version-up": "npm version patch"
+    "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "check": "tsc",
+    "test": "npm run build && node --test",
+    "lint:package": "publint --strict && attw --pack . --profile esm-only",
+    "playground:dev": "vite playground",
+    "playground:build": "vite build playground",
+    "playground:preview": "npm run playground:build && node playground/server.mjs",
+    "prepublishOnly": "npm run build"
   }
 }

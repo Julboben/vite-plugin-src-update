@@ -1,0 +1,85 @@
+:root {
+  color-scheme: light dark;
+  --surface: light-dark(#f4f4f5, #18181b);
+  --card: light-dark(#ffffff, #27272a);
+  --text: light-dark(#18181b, #f4f4f5);
+  --muted: light-dark(#52525b, #a1a1aa);
+  --ok: light-dark(#15803d, #4ade80);
+  --pending: light-dark(#a1a1aa, #52525b);
+
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--surface);
+}
+
+body {
+  display: grid;
+  place-items: center;
+  min-block-size: 100dvh;
+  margin: 0;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.card {
+  inline-size: min(100%, 36rem);
+  padding: 2rem;
+  border-radius: 1rem;
+  background: var(--card);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.1), 0 8px 24px rgb(0 0 0 / 0.06);
+
+  h1 {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+  }
+}
+
+.lead {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+}
+
+.checks {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+[data-check] {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+
+  &::before {
+    content: var(--check-icon, "…");
+    display: grid;
+    place-items: center;
+    flex: none;
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    border-radius: 50%;
+    font-weight: 700;
+    color: var(--card);
+    background: var(--check-state, var(--pending));
+  }
+
+  /* Checks passed by JavaScript, plus this stylesheet's own check. */
+  &[data-ok],
+  &[data-check="imported-css"] {
+    --check-state: var(--ok);
+    --check-icon: "✓";
+  }
+}
+
+code {
+  font-size: 0.875em;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-check]::before {
+    transition: background-color 0.3s ease;
+  }
+}

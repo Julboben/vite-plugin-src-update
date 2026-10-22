@@ -1,0 +1,5 @@
+/* Standalone CSS entry: passes its own check without any JavaScript. */
+[data-check="css-entry"] {
+  --check-state: var(--ok);
+  --check-icon: "✓";
+}

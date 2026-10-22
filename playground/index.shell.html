@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>vite-plugin-src-update playground</title>
+    <!-- vite-plugin-src-update:start -->
+    <!-- vite-plugin-src-update:end -->
+  </head>
+  <body>
+    <main class="card">
+      <h1>vite-plugin-src-update</h1>
+      <p class="lead">
+        Each check turns green once the matching asset has loaded.
+        Running in <output id="mode">no JavaScript</output> mode.
+      </p>
+      <ul class="checks">
+        <li data-check="script"><span>JavaScript entry (<code>main.js</code>)</span></li>
+        <li data-check="second-entry"><span>Second JavaScript entry (<code>second.js</code>)</span></li>
+        <li data-check="imported-css"><span>CSS imported from JavaScript (<code>main.css</code>)</span></li>
+        <li data-check="css-entry"><span>Standalone CSS entry (<code>entry.css</code>)</span></li>
+        <li data-check="hmr"><span>HMR client connected</span></li>
+      </ul>
+    </main>
+  </body>
+</html>
