@@ -95,7 +95,7 @@ describe("build", () => {
   describe("platform and assetUrl", () => {
     const cases = {
       bigcommerce: /^<link rel="stylesheet" href="\{\{cdn '\.?\/dist\/(?:assets\/)?main-[\w-]+\.css'\}\}">$/,
-      shopify: /^<link rel="stylesheet" href="\{\{ 'main-[\w-]+\.css' \| asset_url \}\}">$/,
+      shopify: /^<link rel="stylesheet" href="\{\{ 'main-[\w-]+\.css' \| asset_url \| split: '\?' \| first \}\}">$/,
       razor: /^<link rel="stylesheet" href="@Url\.Content\("~\/dist\/assets\/main-[\w-]+\.css"\)">$/,
       webforms: /^<link rel="stylesheet" href="<%= ResolveUrl\("~\/dist\/assets\/main-[\w-]+\.css"\) %>">$/,
     };

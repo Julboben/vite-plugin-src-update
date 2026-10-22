@@ -110,7 +110,7 @@ The `shopify` platform sets the Vite options Shopify needs (see [Platform defaul
 
 ```liquid
 {% comment %} generated {% endcomment %}
-<script type="module" src="{{ 'main-8WQytZJj.js' | asset_url }}"></script>
+<script type="module" src="{{ 'main-8WQytZJj.js' | asset_url | split: '?' | first }}"></script>
 ```
 
 Include it with `{% render 'vite-assets' %}` in `layout/theme.liquid`.

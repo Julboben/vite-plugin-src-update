@@ -11,7 +11,11 @@ export interface HtmlTag {
 
 export const PLATFORM_URLS: Record<Platform, AssetUrlFunction> = {
   bigcommerce: (url) => `{{cdn '${url}'}}`,
-  shopify: (_url, fileName) => `{{ '${fileName}' | asset_url }}`,
+  // Drop Shopify's `?v=` query: chunks import each other by plain file name,
+  // so a modulepreload for `chunk.js?v=1` would be a different URL and
+  // download the file twice.
+  shopify: (_url, fileName) =>
+    `{{ '${fileName}' | asset_url | split: '?' | first }}`,
   razor: (url) => `@Url.Content("${toAppRelative(url)}")`,
   webforms: (url) => `<%= ResolveUrl("${toAppRelative(url)}") %>`,
 };
