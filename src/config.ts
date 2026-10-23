@@ -1,5 +1,6 @@
 import path from "node:path";
-import { version, type Plugin, type UserConfig } from "vite";
+import { version, type Logger, type Plugin, type UserConfig } from "vite";
+import { shopifyCors } from "./cors.js";
 import { onDevOrigin, ORIGIN_PLACEHOLDER } from "./dev.js";
 import { expandInputs } from "./inputs.js";
 import type {
@@ -11,11 +12,6 @@ import { PLATFORM_URLS } from "./tags.js";
 
 export const NAME = "vite-plugin-src-update";
 export const PREFIX = `[${NAME}]`;
-
-/** Vite's default `server.cors` origins (localhost and 127.0.0.1 on any port). */
-const LOCALHOST_ORIGIN =
-  /^https?:\/\/(?:(?:[^:]+\.)?localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$/;
-const MYSHOPIFY_ORIGIN = /^https:\/\/[a-z0-9-]+\.myshopify\.com$/;
 
 /** Platforms whose assets are served from a CDN rather than the site itself. */
 const CDN_PLATFORMS = new Set<Platform>(["bigcommerce", "shopify"]);
@@ -96,6 +92,7 @@ export function checkOptions(options: VitePluginSrcUpdateOptions): string[] {
  */
 export function defaultsPlugin(list: VitePluginSrcUpdateOptions[]): Plugin {
   let devOrigin: string | undefined;
+  let logger: Logger | undefined;
   const withDevOrigin = (code: string) =>
     devOrigin && code.includes(ORIGIN_PLACEHOLDER)
       ? code.replaceAll(ORIGIN_PLACEHOLDER, devOrigin)
@@ -137,13 +134,22 @@ export function defaultsPlugin(list: VitePluginSrcUpdateOptions[]): Plugin {
       if (platforms.has("shopify")) {
         // Shopify serves theme assets from a flat folder.
         if (build.assetsDir === undefined) defaults.build!.assetsDir = "";
-        // Allow theme previews on *.myshopify.com to load dev server assets.
+        // Let theme previews on the store's domains (custom and market
+        // domains included) load dev server assets.
         if (server.cors === undefined) {
-          defaults.server!.cors = { origin: [LOCALHOST_ORIGIN, MYSHOPIFY_ORIGIN] };
+          // Shopify CLI's SHOPIFY_FLAG_STORE narrows it to that store's domains.
+          defaults.server!.cors = shopifyCors({
+            store: process.env.SHOPIFY_FLAG_STORE,
+            logger: () => logger,
+          });
         }
       }
 
       return defaults;
+    },
+
+    configResolved(config) {
+      logger = config.logger;
     },
 
     configureServer(server) {

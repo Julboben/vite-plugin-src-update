@@ -255,7 +255,7 @@ The `bigcommerce` and `shopify` platforms fill in Vite options they need. They o
 | --- | --- | --- | --- |
 | `bigcommerce`, `shopify` | `base` | `"./"` | Chunks, fonts and images are loaded relative to the file that references them, so they come from the CDN instead of the store's domain. |
 | `shopify` | `build.assetsDir` | `""` | Shopify's `assets` folder is flat. |
-| `shopify` | `server.cors` | `localhost`, `127.0.0.1` and `https://*.myshopify.com` | Theme previews on `myshopify.com` can load scripts from the dev server. |
+| `shopify` | `server.cors` | `localhost`, `127.0.0.1` and the store's own domains | Theme previews on `myshopify.com`, custom and market domains can load scripts from the dev server. See [below](#shopify-previews-on-custom-and-market-domains). |
 
 ## Tips
 
@@ -295,11 +295,27 @@ If you've configured `server.hmr`, point it at the tunnel as well: `hmr: { host:
 
 ### CORS
 
-Vite's dev server only allows cross-origin requests from `localhost`/`127.0.0.1` pages by default (the `shopify` platform also allows `*.myshopify.com`). If your backend runs on another host name (e.g. `https://shop.local`), add it to [`server.cors`](https://vite.dev/config/server-options#server-cors):
+Vite's dev server only allows cross-origin requests from `localhost`/`127.0.0.1` pages by default. If your backend runs on another host name (e.g. `https://shop.local`), add it to [`server.cors`](https://vite.dev/config/server-options#server-cors):
 
 ```ts
 server: { cors: { origin: "https://shop.local" } }
 ```
+
+Setting `server.cors` yourself replaces the `shopify` platform's CORS handling described below.
+
+### Shopify previews on custom and market domains
+
+Theme previews and the theme editor run on the store's own domains: `*.myshopify.com`, but also custom and market domains such as `develop.brand.com` or `brand.dk`. With `platform: "shopify"`, the dev server works out which of them may load its assets, without a list to maintain:
+
+- `localhost` and `127.0.0.1` (Shopify CLI's preview) are always allowed.
+- For any other HTTPS domain, the dev server requests its `/meta.json` once. Every Shopify storefront serves this, even when it's password-protected. If it's a Shopify store, the domain is allowed for the rest of the session; otherwise it's blocked. Both are logged.
+- If Shopify CLI's `SHOPIFY_FLAG_STORE` environment variable is set, only that store's domains are allowed, not other Shopify stores. Setting it once covers both tools, since Shopify CLI reads it too:
+
+```sh
+SHOPIFY_FLAG_STORE=my-shop.myshopify.com npm run dev
+```
+
+The first request from a new domain waits for the check, typically a few hundred milliseconds. Builds and live stores aren't affected.
 
 ### Module preload polyfill
 

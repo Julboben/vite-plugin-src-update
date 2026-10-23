@@ -12,9 +12,11 @@ npm ci
 
 | Path | Purpose |
 | --- | --- |
-| `src/index.ts` | The plugin: options, Vite hooks, dev server origin |
+| `src/index.ts` | The plugin per template: options and Vite hooks for dev and build |
 | `src/config.ts` | Option checks, platform resolution and the Vite defaults applied once for all templates (build input, platform defaults) |
 | `src/inputs.ts` | Expands input folders into entry files |
+| `src/dev.ts` | The dev server's public origin, and the placeholder that points dev asset URLs at it |
+| `src/cors.ts` | CORS for Shopify previews: allows the store's domains via their `/meta.json` |
 | `src/build.ts` | Turns the build output into tags (input filtering, CSS, preloads, legacy) |
 | `src/tags.ts` | Tag rendering and the URL helper per platform |
 | `src/template.ts` | Header comments per extension, markers and safe writes |
