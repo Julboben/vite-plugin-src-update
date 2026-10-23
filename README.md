@@ -36,7 +36,7 @@ export default defineConfig({
 });
 ```
 
-The plugin also uses `input` as Vite's build input, so you don't need `build.rollupOptions.input`. An `input` can be a folder: `input: ["src/entrypoints"]` makes every script and style file inside it an entry.
+The plugin also uses `input` as Vite's build input, so you don't need `build.rollupOptions.input` (`build.rolldownOptions.input` in Vite 8). An `input` can be a folder: `input: ["src/entrypoints"]` makes every script and style file inside it an entry.
 
 Then include `templates/partials/vite-assets.html` from your layout. While `vite` is running it contains:
 
@@ -97,7 +97,7 @@ export default defineConfig({
       templateFilePath: "snippets/vite-assets.liquid",
       input: ["frontend/entrypoints"],
       platform: "shopify",
-      // Optional: Shopify's theme hot reload, as vite-plugin-shopify adds it.
+      // Optional: Shopify's theme hot reload, which refreshes sections after Shopify CLI uploads a Liquid change.
       devTags: [
         `<script type="module" id="hot-reload-client" src="https://cdn.jsdelivr.net/npm/@shopify/theme-hot-reload/dist/theme-hot-reload.min.js"></script>`,
       ],
@@ -106,7 +106,7 @@ export default defineConfig({
 });
 ```
 
-The `shopify` platform sets the Vite options Shopify needs (see [Platform defaults](#platform-defaults)), so there's no `base` or `assetsDir` to configure.
+The `shopify` platform sets the Vite options Shopify needs, so there's no `base`, `assetsDir` or CORS to configure (see [Platform defaults](#platform-defaults)).
 
 ```liquid
 {% comment %} generated {% endcomment %}
@@ -246,7 +246,6 @@ Unknown options are reported as warnings, so typos don't go unnoticed.
 
 **Default `base`:** your Vite `base` if you set it to an absolute path or URL. Otherwise the plugin uses `/<build.outDir relative to the root>/`, e.g. `/dist/`. If `build.outDir` is outside the Vite root, the URL can't be inferred; set `base` (you'll get a warning).
 
-
 ### Platform defaults
 
 The `bigcommerce` and `shopify` platforms fill in Vite options they need. They only apply when you haven't set the option yourself:
@@ -261,9 +260,11 @@ The `bigcommerce` and `shopify` platforms fill in Vite options they need. They o
 
 ### Dev server URL, Docker and HTTPS
 
-The dev tags use Vite's [`server.origin`](https://vite.dev/config/server-options#server-origin) when it's set. If you don't set it, the plugin sets it to the dev server's address, so fonts and images referenced from CSS also load from the dev server rather than the backend. Set it whenever the browser reaches Vite on a different address than the one Vite listens on, e.g. in Docker, DDEV or behind a proxy. It's also required in middleware mode.
+Dev tags, and the URLs of fonts and images referenced from CSS, point at the dev server's address: the configured `server.host` name, or `localhost`, with the port Vite listens on.
 
-Without it, the plugin uses the configured `server.host` name, or `localhost`. When the backend is served over HTTPS (IIS Express, BigCommerce), run Vite over HTTPS too, e.g. with [`@vitejs/plugin-basic-ssl`](https://github.com/vitejs/vite-plugin-basic-ssl) or mkcert. Otherwise the browser blocks the dev scripts as mixed content.
+Set Vite's [`server.origin`](https://vite.dev/config/server-options#server-origin) when the browser reaches Vite on a different address, e.g. in Docker, DDEV or behind a proxy; the plugin then uses that instead. It's also required in middleware mode, where Vite doesn't listen itself.
+
+When the backend is served over HTTPS (IIS Express, BigCommerce), run Vite over HTTPS too, e.g. with [`@vitejs/plugin-basic-ssl`](https://github.com/vitejs/vite-plugin-basic-ssl) or mkcert. Otherwise the browser blocks the dev scripts as mixed content.
 
 ### Testing on other devices (tunnel)
 
@@ -342,7 +343,7 @@ With [`@vitejs/plugin-legacy`](https://github.com/vitejs/vite/tree/main/packages
 If a plugin such as [`vite-plugin-full-reload`](https://github.com/ElMassimo/vite-plugin-full-reload) watches your template folder, it also sees the template this plugin writes when the dev server starts, and reloads the page once for nothing. Exclude the generated file from its globs:
 
 ```ts
-fullReload(["theme/**/*.liquid", "!theme/snippets/vite-tag.liquid"]);
+fullReload(["**/*.liquid", "!snippets/vite-assets.liquid"]);
 ```
 
 ### Don't ship dev URLs
@@ -364,9 +365,9 @@ vitePluginSrcUpdate({
 });
 ```
 
-- Set `build.outDir` (e.g. `"assets"`), and add `build.rollupOptions.input` with all entries if some are built but not rendered through the snippet.
+- Set `build.outDir` (e.g. `"assets"`). If some entries are built but not rendered through the snippet, list all entries in `build.rollupOptions.input` (`build.rolldownOptions.input` in Vite 8).
 - `vite-plugin-shopify` decides per `render 'vite-tag', entry: '…'` call which entry to load. This plugin writes a fixed list of tags per file, so use one template per combination of entries. Existing `render 'vite-tag' with 'theme.ts'` calls keep working, because the parameter is ignored.
-- Delete the old generated `snippets/vite-tag.liquid` once. The plugin won't overwrite a file another tool generated.
+- The plugin won't overwrite the `snippets/vite-tag.liquid` that `vite-plugin-shopify` generated. Delete it once, or set `force: true` until everyone has run the new setup.
 - Its `~/` and `@/` import aliases aren't added; define them in `resolve.alias` if your code uses them.
 
 ## Migrating from 1.x

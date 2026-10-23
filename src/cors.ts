@@ -25,8 +25,9 @@ export interface ShopifyCorsOptions {
 
 /**
  * CORS for Shopify theme previews: allows pages on localhost, and pages on
- * any domain that is a Shopify storefront (or one of `store`'s domains when
- * set) — including custom and market domains, without listing them.
+ * any domain that is a Shopify storefront — including custom and market
+ * domains, without listing them. With `store` (from `SHOPIFY_FLAG_STORE`),
+ * only that store's domains are allowed.
  *
  * A domain is checked once per dev session by requesting its `/meta.json`,
  * which every Shopify storefront serves, even when password-protected.

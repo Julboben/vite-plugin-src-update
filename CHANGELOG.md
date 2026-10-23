@@ -10,6 +10,10 @@ work; the release workflow turns that section into the new version and uses it a
 - Shopify theme previews on custom and market domains can load dev server assets. With `platform: "shopify"`, the dev server checks a domain's public `/meta.json` once, and allows it if it's a Shopify storefront. No list of domains to maintain, and other websites stay blocked.
 - When Shopify CLI's `SHOPIFY_FLAG_STORE` environment variable is set, only that store's domains are allowed.
 
+### Documentation
+
+- README corrections: clearer dev server URL tip, consistent file names in the Shopify examples, and the Vite 8 name of the build input option.
+
 ## 2.1.2
 
 ### Fixed
