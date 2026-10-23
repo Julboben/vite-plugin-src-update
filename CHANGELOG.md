@@ -5,6 +5,8 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+## 2.1.3
+
 ### Added
 
 - Shopify theme previews on custom and market domains can load dev server assets. With `platform: "shopify"`, the dev server checks a domain's public `/meta.json` once, and allows it if it's a Shopify storefront. No list of domains to maintain, and other websites stay blocked.
