@@ -261,9 +261,37 @@ The `bigcommerce` and `shopify` platforms fill in Vite options they need. They o
 
 ### Dev server URL, Docker and HTTPS
 
-The dev tags use Vite's [`server.origin`](https://vite.dev/config/server-options#server-origin) when it's set. Set it whenever the browser reaches Vite on a different address than the one Vite listens on, e.g. in Docker, DDEV or behind a proxy. It's also required in middleware mode.
+The dev tags use Vite's [`server.origin`](https://vite.dev/config/server-options#server-origin) when it's set. If you don't set it, the plugin sets it to the dev server's address, so fonts and images referenced from CSS also load from the dev server rather than the backend. Set it whenever the browser reaches Vite on a different address than the one Vite listens on, e.g. in Docker, DDEV or behind a proxy. It's also required in middleware mode.
 
 Without it, the plugin uses the configured `server.host` name, or `localhost`. When the backend is served over HTTPS (IIS Express, BigCommerce), run Vite over HTTPS too, e.g. with [`@vitejs/plugin-basic-ssl`](https://github.com/vitejs/vite-plugin-basic-ssl) or mkcert. Otherwise the browser blocks the dev scripts as mixed content.
+
+### Testing on other devices (tunnel)
+
+To try dev mode on a phone or share it with a colleague, expose the dev server through a tunnel, e.g. a free [Cloudflare quick tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/):
+
+```sh
+cloudflared tunnel --url http://localhost:5173   # prints https://<random>.trycloudflare.com
+```
+
+Then point Vite at the tunnel. The plugin writes the tunnel URL into the template, and the HMR client connects through it too:
+
+```ts
+const tunnel = process.env.TUNNEL_URL; // e.g. https://random-words.trycloudflare.com
+
+export default defineConfig({
+  server: {
+    origin: tunnel,
+    allowedHosts: tunnel ? [new URL(tunnel).hostname] : [],
+  },
+  // …
+});
+```
+
+```sh
+TUNNEL_URL=https://random-words.trycloudflare.com npx vite
+```
+
+If you've configured `server.hmr`, point it at the tunnel as well: `hmr: { host: new URL(tunnel).hostname, protocol: "wss", clientPort: 443 }`. Quick tunnels get a new URL every time they start, and the template keeps the tunnel URL until the next dev or build run.
 
 ### CORS
 
@@ -292,6 +320,14 @@ import "@vitejs/plugin-react/preamble";
 ### Legacy browsers
 
 With [`@vitejs/plugin-legacy`](https://github.com/vitejs/vite/tree/main/packages/plugin-legacy), the template also gets `nomodule` scripts for the legacy polyfills and entries. The fallback Vite adds to its own HTML for browsers that support ES modules but not modern syntax isn't included. If you need it, copy it from your Vite-built `index.html`.
+
+### Full-reload plugins
+
+If a plugin such as [`vite-plugin-full-reload`](https://github.com/ElMassimo/vite-plugin-full-reload) watches your template folder, it also sees the template this plugin writes when the dev server starts, and reloads the page once for nothing. Exclude the generated file from its globs:
+
+```ts
+fullReload(["theme/**/*.liquid", "!theme/snippets/vite-tag.liquid"]);
+```
 
 ### Don't ship dev URLs
 
@@ -325,6 +361,14 @@ See the [2.0.0 changelog](./CHANGELOG.md#200) for breaking changes and migration
 - `input` now filters build output per template.
 - Hand-written files are no longer overwritten without markers or `force`.
 - `outDir` is now `base`, and `cdn: true` is now `platform: "bigcommerce"`.
+
+## Roadmap
+
+Ideas that may be added later; open an issue if you need one of them:
+
+- **Stylesheet tags for CSS entries in dev.** CSS entries are loaded with `<script type="module">` in dev, so their styles appear only after JavaScript runs (a brief flash of unstyled content). Writing `<link rel="stylesheet">` for them instead would avoid that. CSS imported from a JavaScript entry isn't affected.
+- **One template per entry.** A `[name]` placeholder in `templateFilePath` (e.g. `snippets/vite-[name].liquid`) to write a separate template for each entry, so pages can load only what they need.
+- **Stylesheet preloading for Shopify.** An option to use `stylesheet_tag: preload: true`, which makes Shopify send an early preload hint for render-blocking CSS. Only worth adding if testing shows a real gain in Largest Contentful Paint.
 
 ## Contributing
 

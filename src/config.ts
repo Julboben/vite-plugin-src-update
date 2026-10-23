@@ -1,5 +1,6 @@
 import path from "node:path";
 import { version, type Plugin, type UserConfig } from "vite";
+import { onDevOrigin, ORIGIN_PLACEHOLDER } from "./dev.js";
 import { expandInputs } from "./inputs.js";
 import type {
   AssetUrlFunction,
@@ -94,13 +95,27 @@ export function checkOptions(options: VitePluginSrcUpdateOptions): string[] {
  * the build input (from every template's `input`) and platform defaults.
  */
 export function defaultsPlugin(list: VitePluginSrcUpdateOptions[]): Plugin {
+  let devOrigin: string | undefined;
+  const withDevOrigin = (code: string) =>
+    devOrigin && code.includes(ORIGIN_PLACEHOLDER)
+      ? code.replaceAll(ORIGIN_PLACEHOLDER, devOrigin)
+      : undefined;
+
   return {
     name: `${NAME}:defaults`,
 
-    config(userConfig): UserConfig {
+    config(userConfig, { command }): UserConfig {
       const platforms = new Set(list.map((o) => resolvePlatform(o).platform));
       const build = userConfig.build ?? {};
-      const defaults: UserConfig = { build: {} };
+      const server = userConfig.server ?? {};
+      const defaults: UserConfig = { build: {}, server: {} };
+
+      // Dev asset URLs (CSS url(), imported fonts and images) must point at the
+      // dev server, not at the backend serving the page. The real origin is
+      // only known once the server listens, so start with a placeholder.
+      if (command === "serve" && !server.origin && !server.middlewareMode) {
+        defaults.server!.origin = ORIGIN_PLACEHOLDER;
+      }
 
       if (!hasInput(build)) {
         const root = path.resolve(userConfig.root ?? "");
@@ -123,14 +138,27 @@ export function defaultsPlugin(list: VitePluginSrcUpdateOptions[]): Plugin {
         // Shopify serves theme assets from a flat folder.
         if (build.assetsDir === undefined) defaults.build!.assetsDir = "";
         // Allow theme previews on *.myshopify.com to load dev server assets.
-        if (userConfig.server?.cors === undefined) {
-          defaults.server = {
-            cors: { origin: [LOCALHOST_ORIGIN, MYSHOPIFY_ORIGIN] },
-          };
+        if (server.cors === undefined) {
+          defaults.server!.cors = { origin: [LOCALHOST_ORIGIN, MYSHOPIFY_ORIGIN] };
         }
       }
 
       return defaults;
+    },
+
+    configureServer(server) {
+      onDevOrigin(server, (origin) => {
+        devOrigin = origin;
+      });
+    },
+
+    transform(code) {
+      return withDevOrigin(code);
+    },
+
+    transformIndexHtml: {
+      order: "post",
+      handler: (html) => withDevOrigin(html),
     },
   };
 }
