@@ -5,6 +5,8 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+## 2.2.0
+
 ### Documentation
 
 - README corrections: clearer dev server URL tip, consistent file names in the Shopify examples, and the Vite 8 name of the build input option.
