@@ -84,15 +84,17 @@ describe("platform defaults", () => {
     return probe.config;
   };
 
-  test("shopify: relative base, flat assets and CORS for myshopify.com previews", async () => {
+  test("shopify: relative base, flat assets and CORS for store previews", async () => {
     const config = await resolved({ platform: "shopify" });
     assert.equal(config.base, "./");
     assert.equal(config.build.assetsDir, "");
-    const allowed = (origin) => config.server.cors.origin.some((re) => re.test(origin));
-    assert.ok(allowed("https://my-store.myshopify.com"));
-    assert.ok(allowed("http://127.0.0.1:9292"));
-    assert.ok(!allowed("https://evil.example"));
-    assert.ok(!allowed("https://my-store.myshopify.com.evil.example"));
+    const allowed = (origin) =>
+      new Promise((resolve) => config.server.cors.origin(origin, (_err, ok) => resolve(ok)));
+    assert.ok(await allowed("https://my-store.myshopify.com"));
+    assert.ok(await allowed("http://127.0.0.1:9292"));
+    // .invalid never resolves, so the /meta.json lookup fails and the site is blocked.
+    assert.ok(!(await allowed("https://not-a-store.invalid")));
+    assert.ok(!(await allowed("https://my-store.myshopify.com.invalid")));
   });
 
   test("bigcommerce: relative base only", async () => {

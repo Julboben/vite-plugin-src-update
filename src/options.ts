@@ -36,7 +36,7 @@ export interface VitePluginSrcUpdateOptions {
    * The platform that renders the template. Wraps built asset URLs in its
    * helper (e.g. Shopify's `asset_url`) and fills in Vite options you
    * haven't set: `base: "./"` for `"bigcommerce"` and `"shopify"`, plus
-   * `build.assetsDir: ""` and CORS for `*.myshopify.com` for `"shopify"`.
+   * `build.assetsDir: ""` and CORS for the store's preview domains for `"shopify"`.
    */
   platform?: Platform;
 
