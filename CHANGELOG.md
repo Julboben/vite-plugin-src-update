@@ -5,6 +5,15 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+### Fixed
+
+- Fonts and images referenced from CSS (and other imported assets) now load from the dev server in dev mode. Without `server.origin`, Vite made their URLs root-relative, so pages served by the backend (e.g. Shopify CLI on `127.0.0.1:9292`) requested them from the wrong host and got 404s. The plugin now sets `server.origin` to the dev server's address when you haven't set it.
+
+### Documentation
+
+- README tip for testing dev mode on other devices through a tunnel (e.g. Cloudflare quick tunnels).
+- README tip for excluding the generated template from full-reload plugins, and a Roadmap section with ideas for later.
+
 ## 2.1.1
 
 ### Fixed

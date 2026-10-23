@@ -58,6 +58,39 @@ describe("dev server", () => {
     ]);
   });
 
+  test("points CSS asset URLs at the dev server, not the page's host", async () => {
+    const root = await fixture({
+      "src/fonts.css": `@font-face { font-family: f; src: url("./font.woff2"); }\n`,
+      "src/font.woff2": "",
+    });
+    const file = path.join(root, "t.html");
+    const { port, result: css } = await runDev(
+      root,
+      file,
+      { templateFilePath: file, input: ["src/fonts.css"] },
+      {},
+      (port) => fetch(`http://127.0.0.1:${port}/src/fonts.css`).then((r) => r.text())
+    );
+    assert.ok(css.includes(`http://127.0.0.1:${port}/src/font.woff2`), css);
+    assert.ok(!css.includes("__vite_plugin_src_update_origin__"));
+  });
+
+  test("leaves a configured server.origin alone for asset URLs", async () => {
+    const root = await fixture({
+      "src/fonts.css": `@font-face { font-family: f; src: url("./font.woff2"); }\n`,
+      "src/font.woff2": "",
+    });
+    const file = path.join(root, "t.html");
+    const { result: css } = await runDev(
+      root,
+      file,
+      { templateFilePath: file, input: ["src/fonts.css"] },
+      { server: { origin: "https://tunnel.example" } },
+      (port) => fetch(`http://127.0.0.1:${port}/src/fonts.css`).then((r) => r.text())
+    );
+    assert.ok(css.includes("https://tunnel.example/src/font.woff2"), css);
+  });
+
   test("escapes @ for Razor templates", async () => {
     const root = await fixture();
     const file = path.join(root, "_Vite.cshtml");

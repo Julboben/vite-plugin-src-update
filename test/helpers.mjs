@@ -69,8 +69,11 @@ export async function runBuild(root, pluginOptions, viteConfig = {}) {
   return messages;
 }
 
-/** Starts a dev server, waits for `file` to be written and returns its content. */
-export async function runDev(root, file, pluginOptions, viteConfig = {}) {
+/**
+ * Starts a dev server, waits for `file` to be written and returns its content.
+ * `whileRunning(port)` runs before the server closes, e.g. to fetch modules.
+ */
+export async function runDev(root, file, pluginOptions, viteConfig = {}, whileRunning) {
   const { logger, messages } = recordingLogger();
   const server = await createServer({
     root,
@@ -85,7 +88,9 @@ export async function runDev(root, file, pluginOptions, viteConfig = {}) {
   try {
     if (server.httpServer) await server.listen();
     const address = server.httpServer?.address();
-    return { content: await waitForFile(file), messages, port: address?.port };
+    const content = await waitForFile(file);
+    const result = await whileRunning?.(address?.port);
+    return { content, messages, port: address?.port, result };
   } finally {
     await server.close();
   }

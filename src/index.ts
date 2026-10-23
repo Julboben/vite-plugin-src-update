@@ -14,6 +14,7 @@ import {
   PREFIX,
   resolvePlatform,
 } from "./config.js";
+import { onDevOrigin } from "./dev.js";
 import { expandInputs } from "./inputs.js";
 import type { VitePluginSrcUpdateOptions } from "./options.js";
 import { encodeFileName, moduleScript, renderTag } from "./tags.js";
@@ -175,21 +176,13 @@ function createPlugin(options: VitePluginSrcUpdateOptions): Plugin {
     },
 
     configureServer(server) {
-      const origin = server.config.server.origin?.replace(/\/+$/, "");
-      if (!server.httpServer) {
-        // Middleware mode: Vite never listens itself, so the origin must be configured.
+      onDevOrigin(server, (origin) => {
         if (origin) writeDevTemplate(server, origin);
         else
           warn(
             `The dev server origin is unknown in middleware mode. ` +
               `Set server.origin to update ${fileLabel}.`
           );
-        return;
-      }
-      server.httpServer.once("listening", () => {
-        const address = server.httpServer?.address();
-        if (!address || typeof address !== "object") return;
-        writeDevTemplate(server, origin ?? devOrigin(server, address));
       });
     },
 
@@ -250,23 +243,6 @@ function createPlugin(options: VitePluginSrcUpdateOptions): Plugin {
     },
   };
 }
-
-function devOrigin(
-  server: ViteDevServer,
-  { address, port }: { address: string; port: number }
-): string {
-  const protocol = server.config.server.https ? "https" : "http";
-  const { host } = server.config.server;
-  // Prefer a configured hostname (e.g. "mysite.local"), so it matches the
-  // HTTPS certificate, over the IP address it resolved to.
-  let hostname =
-    typeof host === "string" && !WILDCARD_HOSTS.has(host) ? host : address;
-  if (WILDCARD_HOSTS.has(hostname) || hostname === "::1") hostname = "localhost";
-  if (hostname.includes(":")) hostname = `[${hostname}]`;
-  return `${protocol}://${hostname}:${port}`;
-}
-
-const WILDCARD_HOSTS = new Set(["", "0.0.0.0", "::"]);
 
 const withTrailingSlash = (value: string) =>
   value === "" || value.endsWith("/") ? value : `${value}/`;
