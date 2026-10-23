@@ -5,6 +5,8 @@ work; the release workflow turns that section into the new version and uses it a
 
 ## Unreleased
 
+## 2.1.2
+
 ### Fixed
 
 - Fonts and images referenced from CSS (and other imported assets) now load from the dev server in dev mode. Without `server.origin`, Vite made their URLs root-relative, so pages served by the backend (e.g. Shopify CLI on `127.0.0.1:9292`) requested them from the wrong host and got 404s. The plugin now sets `server.origin` to the dev server's address when you haven't set it.
